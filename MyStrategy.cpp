@@ -1,7 +1,8 @@
 #include "MyStrategy.h"
 #include "strategy_impl/VecUtils.h"
 #include <cmath>
-
+#include <cstdio>
+#include <iostream>
 using namespace model;
 
 const double EPS = 1e-5;
@@ -18,6 +19,13 @@ MyStrategy::MyStrategy() {}
 void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Action &action) {
     // Поэтому, если мы не касаемся земли, будет использовать нитро
     // чтобы как можно быстрее попасть обратно на землю
+
+    std::cout<<"ID: "<< me.id << std::endl;
+    std::cout<< "Robots.size "<< game.robots.size()<<std::endl;
+    for( auto r : game.robots){
+        std::cout<< "id - "<<r.id<<" :: ";
+    }
+    std::cout<< std::endl;
 
     if (!me.touch) {
         action = Action();
@@ -45,10 +53,12 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
     // находящийся ближе к нашим воротам
     bool is_attacker = game.robots.size() == 2;
 
+    std::cout<< "isAttacker " << is_attacker << std::endl;
     for (auto robot : game.robots) {
         if (robot.is_teammate && robot.id != me.id) {
-            if (robot.y > me.y) {
-                is_attacker = false;
+            if (robot.y < me.y) {
+                std::cout<< "isAttacker by coordinates == true" << std::endl;
+                is_attacker = true;
             }
         }
     }
@@ -56,6 +66,7 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
     if (is_attacker) {
         // Стратегия нападающего:
         // Просимулирем примерное положение мяча в следующие 10 секунд, с точностью 0.1 секунда
+        std::cout<< "Attacker ID "<< me.id << std::endl;
         for (int i = 1; i < 100; i++) {
             double t = i * 0.1;
             Vec2 ss = Vec2(game.ball.velocity_x, game.ball.velocity_y).mul(t);
