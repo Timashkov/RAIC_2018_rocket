@@ -12,6 +12,10 @@ public:
     MyStrategy();
 
     void act(const model::Robot& me, const model::Rules& rules, const model::Game& world, model::Action& action) override;
+    
+    void dumpRobot(const model::Robot& r);
+    
+    void dumpBall(const model::Ball& b);
 };
 
 #endif
