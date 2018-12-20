@@ -1,29 +1,10 @@
-cmake_minimum_required(VERSION 3.12)
-project(strategy)
+cmake_minimum_required(VERSION 3.5)
+project(MyStrategy)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -static \
+    -fno-optimize-sibling-calls -fno-strict-aliasing -D_LINUX \
+    -lm -s -O2 -Wall -Wtype-limits -Wno-unknown-pragmas")
 
-include_directories(.)
-include_directories(csimplesocket)
-include_directories(model)
-include_directories(rapidjson)
-include_directories(rapidjson/error)
-include_directories(rapidjson/internal)
-include_directories(strategy_impl)
+file(GLOB strategy_SRC "*.cpp" "model/*.cpp" "csimplesocket/*.cpp")
 
-add_executable(strategy
-        csimplesocket/ActiveSocket.cpp
-        csimplesocket/HTTPActiveSocket.cpp
-        csimplesocket/PassiveSocket.cpp
-        csimplesocket/SimpleSocket.cpp
-        MyStrategy.cpp
-        RemoteProcessClient.cpp
-        Runner.cpp
-        Strategy.cpp)
-
-add_definitions(-D_LINUX -DLOCAL_RUN)
-add_compile_options(-std=c++17 -static -fno-optimize-sibling-calls -fno-strict-aliasing -lm -s -x c++ -O2 -Wall -Wtype-limits -Wno-unknown-pragmas)
-#add_library(m)
-
-#set(GCC_COVERAGE_COMPILE_FLAGS " -static -fno-optimize-sibling-calls -fno-strict-aliasing -lm -s -x c++ -O2 -Wall -Wtype-limits -Wno-unknown-pragmas")
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}" )
+add_executable(MyStrategy ${strategy_SRC})
