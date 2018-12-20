@@ -50,19 +50,18 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
     // Так как роботов несколько, определим нашу роль - защитник, или нападающий
     // Нападающим будем в том случае, если есть дружественный робот,
     // находящийся ближе к нашим воротам
-//    bool is_attacker = game.robots.size() == 2;
-//
-//    std::cout<< "isAttacker " << is_attacker << std::endl;
-//    for (auto robot : game.robots) {
-//        if (robot.is_teammate && robot.id != me.id) {
-//            if (robot.y < me.y) {
-//                std::cout<< "isAttacker by coordinates == true" << std::endl;
-//                is_attacker = true;
-//            }
-//        }
-//    }
+    bool is_attacker = game.robots.size() == 2;
 
-    if (me.id == 1) {
+    std::cout<< "isAttacker " << is_attacker << std::endl;
+    for (auto robot : game.robots) {
+        if (robot.is_teammate && robot.id != me.id) {
+            if (robot.y < me.y) {
+                is_attacker = true;
+            }
+        }
+    }
+
+    if (is_attacker) {
         // Стратегия нападающего:
         // Просимулирем примерное положение мяча в следующие 10 секунд, с точностью 0.1 секунда
         std::cout << "Attacker ID " << me.id << std::endl;
@@ -107,7 +106,7 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
     // Будем стоять посередине наших ворот
     Vec2 target_pos = Vec2(0.0, -(rules.arena.depth / 2.0) + rules.arena.bottom_radius);
     // Причем, если мяч движется в сторону наших ворот
-    if (game.ball.z < -EPS) {
+    if (game.ball.velocity_z < 0) {
         // Найдем время и место, в котором мяч пересечет линию ворот
         double t = (target_pos.getY() - game.ball.z) / game.ball.velocity_z;
         double x = game.ball.x + game.ball.velocity_x * t;
