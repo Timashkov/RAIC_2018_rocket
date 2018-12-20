@@ -6,6 +6,7 @@
 #define _MY_STRATEGY_H_
 
 #include "Strategy.h"
+#include "Extensions.h"
 
 class MyStrategy : public Strategy {
 public:
