@@ -1,5 +1,5 @@
 #include "MyStrategy.h"
-#include "strategy_impl/VecUtils.h"
+#include "VecUtils.h"
 #include <cmath>
 #include <cstdio>
 #include <iostream>
