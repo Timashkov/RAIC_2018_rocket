@@ -7,6 +7,7 @@
 #include "CVL_Utils.h"
 
 using namespace model;
+using namespace std;
 
 const double EPS = 1e-5;
 
@@ -52,7 +53,6 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
     // находящийся ближе к нашим воротам
     bool is_attacker = game.robots.size() == 2;
 
-    std::cout<< "isAttacker " << is_attacker << std::endl;
     for (auto robot : game.robots) {
         if (robot.is_teammate && robot.id != me.id) {
             if (robot.y < me.y) {
