@@ -37,6 +37,8 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
         return;
     }
 
+    unique_ptr<BallExtended> ballExtended(new BallExtended(game.ball));
+
     const double JUMP_TIME = 0.2;
     const double MAX_JUMP_HEIGHT = 3.0;
 
