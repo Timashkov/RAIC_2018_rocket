@@ -5,18 +5,12 @@
 #include <iostream>
 #include <sstream>
 #include "CVL_Utils.h"
+//#include "Simulation.h"
 
 using namespace model;
 using namespace std;
 
 const double EPS = 1e-5;
-
-// Константы, взятые из документации
-const double BALL_RADIUS = 2.0;
-const double ROBOT_MAX_RADIUS = 1.05;
-const double MAX_ENTITY_SPEED = 100.0;
-const double ROBOT_MAX_GROUND_SPEED = 30.0;
-const double ROBOT_MAX_JUMP_SPEED = 15.0;
 
 MyStrategy::MyStrategy() {}
 
@@ -24,13 +18,13 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
     // Поэтому, если мы не касаемся земли, будет использовать нитро
     // чтобы как можно быстрее попасть обратно на землю
 
-    dumpBall(game.ball);
-    dumpRobot(me);
+    dumpTick(game);
+
+    dumpRobot(me, "me");
 
     if (!me.touch) {
-//        action = Action();
         action.target_velocity_x = 0.0;
-        action.target_velocity_y = -MAX_ENTITY_SPEED;
+        action.target_velocity_y = -rules.MAX_ENTITY_SPEED;
         action.target_velocity_z = 0.0;
         action.jump_speed = 0.0;
         action.use_nitro = true;
@@ -47,7 +41,7 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
     // ударив по мячу сильнее в сторону противника
     bool is_jump = sqrt(pow(me.x - game.ball.x, 2)
                         + pow(me.y - game.ball.y, 2)
-                        + pow(me.z - game.ball.z, 2)) < BALL_RADIUS + ROBOT_MAX_RADIUS;
+                        + pow(me.z - game.ball.z, 2)) < rules.BALL_RADIUS + rules.ROBOT_MAX_RADIUS;
     is_jump = is_jump && me.z < game.ball.z;
 
     // Так как роботов несколько, определим нашу роль - защитник, или нападающий
@@ -88,14 +82,14 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
                 Vec2 delta_pos = Vec2(ball_pos.getX(), ball_pos.getY()).sub(ss);
                 double need_speed = delta_pos.len() / t;
                 // Если эта скорость лежит в допустимом отрезке
-                if (0.5 * ROBOT_MAX_GROUND_SPEED < need_speed
-                    && need_speed < ROBOT_MAX_GROUND_SPEED) {
+                if (0.5 * rules.ROBOT_MAX_GROUND_SPEED < need_speed
+                    && need_speed < rules.ROBOT_MAX_GROUND_SPEED) {
                     // То это и будет наше текущее действие
                     Vec2 target_velocity = Vec2(delta_pos.getX(), delta_pos.getY()).normalize()->mul(need_speed);
                     action.target_velocity_x = target_velocity.getX();
                     action.target_velocity_y = 0.0;
                     action.target_velocity_z = target_velocity.getY();
-                    action.jump_speed = is_jump ? ROBOT_MAX_JUMP_SPEED : 0.0;
+                    action.jump_speed = is_jump ? rules.ROBOT_MAX_JUMP_SPEED : 0.0;
                     action.use_nitro = false;
                 }
                 return;
@@ -120,19 +114,19 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
     }
 
     // Установка нужных полей для желаемого действия
-    Vec2 target_velocity = Vec2(target_pos.getX() - me.x, target_pos.getY() - me.z).mul(ROBOT_MAX_GROUND_SPEED);
+    Vec2 target_velocity = Vec2(target_pos.getX() - me.x, target_pos.getY() - me.z).mul(rules.ROBOT_MAX_GROUND_SPEED);
 //    action = Action();
     action.target_velocity_x = target_velocity.getX();
     action.target_velocity_y = 0.0;
     action.target_velocity_z = target_velocity.getY();
-    action.jump_speed = is_jump ? ROBOT_MAX_JUMP_SPEED : 0.0;
+    action.jump_speed = is_jump ? rules.ROBOT_MAX_JUMP_SPEED : 0.0;
     action.use_nitro = false;
 }
 
 
-void MyStrategy::dumpRobot(const model::Robot &r) {
+void MyStrategy::dumpRobot(const model::Robot &r, const char * caption) {
     std::stringstream ss;
-    ss << " ROBOT: id: *" << r.id << "*";
+    ss << " ROBOT: id: *" << r.id << "* caption:" << caption<< "* ";
     ss << " player_id: *" << r.player_id << "*";
     ss << " is_teammate: *" << r.is_teammate << "*";
     ss << " coord: (" << r.x << ";" << r.y << ":" << r.z << ")";
@@ -144,10 +138,33 @@ void MyStrategy::dumpRobot(const model::Robot &r) {
     writeLog(ss);
 }
 
-void MyStrategy::dumpBall(const model::Ball &b) {
+void MyStrategy::dumpAction(const model::Action& act){
     std::stringstream ss;
-    ss << " BALL radius:" << b.radius;
-    ss << " coord:(" << b.x << ";" << b.y << ";" << b.z << ")";
-    ss << " velocity:(" << b.velocity_x << ";" << b.velocity_y << ";" << b.velocity_z << ")" << std::endl;
+    ss << " Action:target:(" << act.target_velocity_x << ";" << act.target_velocity_y << ";" << act.target_velocity_z << ")";
+    ss << "jump_speed = " << act.jump_speed << " ; use_nitro" << act.use_nitro << ";" << std::endl;
+    writeLog(ss);
+}
+
+
+void MyStrategy::dumpTick(const model::Game& game){
+    
+    std::stringstream ss;
+    ss << " tick : " << game.current_tick << endl;
+    ss << " BALL radius:" << game.ball.radius;
+    ss << " coord:(" << game.ball.x << ";" << game.ball.y << ";" << game.ball.z << ")";
+    ss << " velocity:(" << game.ball.velocity_x << ";" << game.ball.velocity_y << ";" << game.ball.velocity_z << ")" << std::endl;
+    
+    for (Robot r: game.robots){
+        ss << " ROBOT: id: *" << r.id << "* " << "* ";
+        ss << " player_id: *" << r.player_id << "*";
+        ss << " is_teammate: *" << r.is_teammate << "*";
+        ss << " coord: (" << r.x << ";" << r.y << ":" << r.z << ")";
+        ss << " velocity: (" << r.velocity_x << ";" << r.velocity_y << ";" << r.velocity_z << ")";
+        ss << " radius:" << r.radius;
+        ss << " nitro:" << r.nitro_amount;
+        ss << " touch:" << r.touch;
+        ss << " touch_normal: x:" << r.touch_normal_x << "Y:" << r.touch_normal_y << "z:" << r.touch_normal_z << std::endl;
+    }
+    
     writeLog(ss);
 }

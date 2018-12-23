@@ -14,9 +14,11 @@ public:
 
     void act(const model::Robot& me, const model::Rules& rules, const model::Game& world, model::Action& action) override;
     
-    void dumpRobot(const model::Robot& r);
+    void dumpRobot(const model::Robot& r, const char * caption);
     
-    void dumpBall(const model::Ball& b);
+    void dumpAction(const model::Action& act);
+    
+    void dumpTick(const model::Game& game);
 };
 
 #endif
