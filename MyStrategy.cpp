@@ -18,6 +18,13 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
     // Поэтому, если мы не касаемся земли, будет использовать нитро
     // чтобы как можно быстрее попасть обратно на землю
 
+    if (!sim.isInited()){
+        sim.init(game, rules);
+    
+        sim.go();
+        
+    }
+    
     dumpTick(game);
 
     dumpRobot(me, "me");

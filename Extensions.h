@@ -118,43 +118,6 @@ public:
     static Vec3 None;
 };
 
-Vec3 Vec3::None = Vec3(-1000,-1000,-1000);
-
-Vec3 min(Vec3 a, Vec3 b){
-    return a.len() < b.len() ? a: b;
-}
-
-Vec3 max(Vec3 a, Vec3 b){
-    return a.len()> b.len()? a: b;
-}
-
-Vec3 clamp(Vec3 target, Vec3 lb, Vec3 ub){
-    return min(max(target, lb), ub);
-}
-
-Vec3 clamp(Vec3 target, double max){
-    double current = target.len();
-    if (current > max){
-        return target.normalized()*max;
-    }
-    return target;
-}
-
-double min(double a, double b){
-    return a < b ? a: b;
-}
-
-double max(double a, double b){
-    return a > b? a: b;
-}
-
-double clamp(double target, double lb, double ub){
-    return min(max(target, lb), ub);
-}
-
-double dot(Vec3 a, Vec3 b){
-    return inner_product(a.getVec().begin(), a.getVec().end(), b.getVec().begin(), 0.0);
-}
 
 class BallExtended {
 private:
@@ -179,5 +142,22 @@ public:
     }
 
 };
+
+Vec3 min(Vec3 a, Vec3 b);
+
+Vec3 max(Vec3 a, Vec3 b);
+
+Vec3 clamp(Vec3 target, Vec3 lb, Vec3 ub);
+
+Vec3 clamp(Vec3 target, double max);
+
+double min(double a, double b);
+
+double max(double a, double b);
+
+double clamp(double target, double lb, double ub);
+
+double dot(Vec3 a, Vec3 b);
+
 
 #endif /* Extensions_h */

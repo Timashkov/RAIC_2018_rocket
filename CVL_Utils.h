@@ -11,26 +11,8 @@
 
 #include <iostream>
 #include <sstream>
-#ifdef LOCAL_RUN
-#include <fstream>
-std::ofstream myfile;
-#endif
 
-void writeLog(const std::stringstream& ss){
-#ifdef LOCAL_RUN
-    if (!myfile.is_open())
-        myfile.open ("example.txt");
-    myfile << ss.str() <<std::endl;
-    
-    
-#endif
-}
-
-void closeLog(){
-#ifdef LOCAL_RUN
-    if (myfile.is_open())
-        myfile.close();
-#endif
-}
+void writeLog(const std::stringstream& ss);
+void closeLog();
 
 #endif /* CVL_Utils_h */

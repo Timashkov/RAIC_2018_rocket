@@ -7,8 +7,11 @@
 
 #include "Strategy.h"
 #include "Extensions.h"
+#include "Simulation.h"
 
 class MyStrategy : public Strategy {
+private:
+    Simulation sim;
 public:
     MyStrategy();
 
