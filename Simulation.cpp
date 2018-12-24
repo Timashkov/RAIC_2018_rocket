@@ -9,6 +9,7 @@
 #include "Simulation.h"
 #include "CVL_Utils.h"
 
+
 Dan Simulation::dan_to_plane(Vec3 point, Vec3 point_on_plane, Vec3 plane_normal) {
     return Dan(dot((point - point_on_plane), plane_normal), plane_normal);
 }
@@ -282,6 +283,8 @@ Dan Simulation::dan_to_arena(Vec3 &point) {
     return result;
 }
 
+// Направление определено жестко, рандом только в скорости после удара
+
 void Simulation::collide_entities(Entity &a, Entity &b) {
     Vec3 delta_position = b.position - a.position;
     double distance = delta_position.len();
@@ -416,6 +419,34 @@ void Simulation::tick() {
     }
 }
 
+void Simulation::init(const Game &g, const Rules &rul) {
+    rules = rul;
+    
+    State st;
+    st.ball.setPosition(g.ball.x, g.ball.y, g.ball.z);
+    st.ball.radius = g.ball.radius;
+    st.ball.mass = rul.BALL_MASS;
+    
+    arena = rul.arena;
+    
+    for (Robot rob: g.robots) {
+        Entity erob;
+        erob.id = rob.id;
+        erob.player_id = rob.player_id;
+        erob.setPosition(rob.x, rob.y, rob.z);
+        erob.setVelocity(rob.velocity_x, rob.velocity_y, rob.velocity_z);
+        erob.setNormal(rob.touch_normal_x, rob.touch_normal_y, rob.touch_normal_z);
+        erob.touch = rob.touch;
+        erob.mass = rul.ROBOT_MASS;
+        erob.radius = rul.ROBOT_RADIUS;
+        rob.is_teammate?robots.push_back(erob):aliens.push_back(erob);
+    }
+    
+    baseNode = unique_ptr<TreeNode>(new TreeNode(st, 1, nullptr));
+    
+    inited = true;
+}
+
 void Simulation::go() {
     std::stringstream ss;
     double delta_time = 1.0 / rules.TICKS_PER_SECOND;
@@ -429,6 +460,7 @@ void Simulation::go() {
 
     for (int i = 0; i < 20; i++) {
         tick();
+        
         ss << " simulaton:: tick : " << current_tick << endl;
         ss << " BALL radius:" << ball.radius;
         ss << " coord:(" << ball.position.getX() << ";" << ball.position.getY() << ";" << ball.position.getZ() << ")";

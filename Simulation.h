@@ -15,6 +15,7 @@
 #include "model/Rules.h"
 #include "model/Game.h"
 #include "model/Robot.h"
+#include "cvl_vec3.h"
 
 class Entity {
 public:
@@ -88,10 +89,35 @@ public:
     Vec3 normal;
 };
 
+class State{
+public:
+    State(){};
+    ~State(){};
+    
+    Entity ball;
+//    vector<Entity> aliens; // Enemy, but 'aliens' looks pijje
+//    vector<Entity> robots;
+};
+
+class TreeNode{
+public:
+    
+    State state;
+    shared_ptr<TreeNode> parent;
+    int current_tick;
+    TreeNode(const State& st, const int tn,TreeNode* pr = NULL):
+    state(st), parent(pr), current_tick(tn)
+    {}
+    ~TreeNode(){}
+    
+    vector< unique_ptr<TreeNode> > children;
+};
+
 class Simulation {
 private:
     bool inited;
     int current_tick;
+    unique_ptr<TreeNode> baseNode;
 public:
     Simulation() : inited(false), current_tick(0) {}
 
@@ -100,8 +126,8 @@ public:
     Rules rules;
     Arena arena;
 
-    Entity ball;
     vector<Entity> robots;
+    vector<Entity> aliens;
     vector<Entity> nitro_packs;
 
     Dan dan_to_plane(Vec3 point, Vec3 point_on_plane, Vec3 plane_normal);
@@ -135,29 +161,7 @@ public:
 
     inline bool isInited() const { return inited; };
 
-    inline void init(const Game &g, const Rules &rul) {
-        rules = rul;
-        ball.setPosition(g.ball.x, g.ball.y, g.ball.z);
-        ball.radius = g.ball.radius;
-        ball.mass = rul.BALL_MASS;
-
-        arena = rul.arena;
-
-        for (Robot rob: g.robots) {
-            Entity erob;
-            erob.id = rob.id;
-            erob.player_id = rob.player_id;
-            erob.setPosition(rob.x, rob.y, rob.z);
-            erob.setVelocity(rob.velocity_x, rob.velocity_y, rob.velocity_z);
-            erob.setNormal(rob.touch_normal_x, rob.touch_normal_y, rob.touch_normal_z);
-            erob.touch = rob.touch;
-            erob.mass = rul.ROBOT_MASS;
-            erob.radius = rul.ROBOT_RADIUS;
-            robots.push_back(erob);
-        }
-
-        inited = true;
-    }
+    void init(const Game &g, const Rules &rul) ;
 
     void go();
 
