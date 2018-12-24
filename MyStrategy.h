@@ -15,13 +15,13 @@ private:
 public:
     MyStrategy();
 
-    void act(const model::Robot& me, const model::Rules& rules, const model::Game& world, model::Action& action) override;
-    
-    void dumpRobot(const model::Robot& r, const char * caption);
+    void act(const model::Robot& me, const model::Rules& rules, const model::Game& game, model::Action& action) override;
     
     void dumpAction(const model::Action& act);
     
     void dumpTick(const model::Game& game);
+
+    void dumpRobot(const model::Robot &r, const char * caption);
 };
 
 #endif

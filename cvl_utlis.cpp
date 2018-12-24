@@ -17,8 +17,7 @@ void writeLog(const std::stringstream& ss){
     if (!myfile.is_open())
         myfile.open ("example.txt");
     myfile << ss.str() <<std::endl;
-    
-    
+
 #endif
 }
 
