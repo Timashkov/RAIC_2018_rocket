@@ -109,7 +109,7 @@ class TreeNode {
 public:
 
     State state;
-    shared_ptr<TreeNode> parent;
+    TreeNode * parent;
 
 
     TreeNode(const State &st, TreeNode *pr = NULL) :

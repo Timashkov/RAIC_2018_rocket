@@ -12,9 +12,12 @@
 class MyStrategy : public Strategy {
 private:
     Simulation sim;
+    int tester_id;
 public:
     MyStrategy();
-
+    ~MyStrategy(){
+        std::cout<< "Strategy destroyed"<<std::endl;
+    }
     void act(const model::Robot& me, const model::Rules& rules, const model::Game& game, model::Action& action) override;
     
     void dumpAction(const model::Action& act);
