@@ -16,6 +16,7 @@
 #include "model/Game.h"
 #include "model/Robot.h"
 #include "cvl_vec3.h"
+#include <queue>
 
 class Entity {
 public:
@@ -81,7 +82,7 @@ public:
 
 class Dan {
 public:
-    Dan(double d, const Vec3& n) : distance(d), normal(n) {}
+    Dan(double d, const Vec3 &n) : distance(d), normal(n) {}
 
     ~Dan() {}
 
@@ -89,35 +90,43 @@ public:
     Vec3 normal;
 };
 
-class State{
+class State {
 public:
-    State(){};
-    ~State(){};
-    
+    State() {};
+
+//    State(const State &source) : ball(source.ball), robots(source.robots), nitro_packs(source.nitro_packs),
+//                           current_tick(source.current_tick + 1) {}
+
+    ~State() {};
+
     Entity ball;
-//    vector<Entity> aliens; // Enemy, but 'aliens' looks pijje
-//    vector<Entity> robots;
+    vector<Entity> robots;
+    vector<Entity> nitro_packs;
+    int current_tick;
 };
 
-class TreeNode{
+class TreeNode {
 public:
-    
+
     State state;
     shared_ptr<TreeNode> parent;
-    int current_tick;
-    TreeNode(const State& st, const int tn,TreeNode* pr = NULL):
-    state(st), parent(pr), current_tick(tn)
-    {}
-    ~TreeNode(){}
-    
-    vector< unique_ptr<TreeNode> > children;
+
+
+    TreeNode(const State &st, TreeNode *pr = NULL) :
+            state(st), parent(pr) {}
+
+    ~TreeNode() {}
+
+    vector<shared_ptr<TreeNode> > children;
 };
 
 class Simulation {
 private:
     bool inited;
     int current_tick;
-    unique_ptr<TreeNode> baseNode;
+    shared_ptr<TreeNode> baseNode;
+    queue<shared_ptr<TreeNode>> processingNodes;
+
 public:
     Simulation() : inited(false), current_tick(0) {}
 
@@ -125,10 +134,6 @@ public:
 
     Rules rules;
     Arena arena;
-
-    vector<Entity> robots;
-    vector<Entity> aliens;
-    vector<Entity> nitro_packs;
 
     Dan dan_to_plane(Vec3 point, Vec3 point_on_plane, Vec3 plane_normal);
 
@@ -146,11 +151,13 @@ public:
 
     Vec3 collide_with_arena(Entity &e);
 
-    void tick();
+    void tick(shared_ptr<TreeNode> node);
 
     void move(Entity &e, double delta_time);
 
-    void update(double delta_time);
+    void update(shared_ptr<TreeNode> &node, double delta_time);
+
+    void moveRobots(shared_ptr<TreeNode> &node, double delta_time);
 
     inline void goal_scored() {};
 
@@ -161,11 +168,13 @@ public:
 
     inline bool isInited() const { return inited; };
 
-    void init(const Game &g, const Rules &rul) ;
+    void init(const Game &g, const Rules &rul);
 
-    void go();
+    void start();
 
-    void moveRobots(double delta_time);
+    void setTick(int tck){ current_tick = tck;}
+
+    void dumpNode(shared_ptr<TreeNode> node);
 };
 
 #endif /* Simulation_h */

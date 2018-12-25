@@ -1,3 +1,5 @@
+#include <memory>
+
 //
 //  Simulation.cpp
 //  raic
@@ -326,21 +328,21 @@ void Simulation::move(Entity &e, double delta_time) {
     e.velocity.setY(e.velocity.getY() - rules.GRAVITY * delta_time);
 }
 
-void Simulation::update(double delta_time) {
+void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
     // FIXME: after investigations
     //    shuffle(robots);
 
-    moveRobots(delta_time);
-    move(ball, delta_time);
+    moveRobots(node, delta_time);
+    move(node->state.ball, delta_time);
 
-    for (int i = 0; i < robots.size(); i++) {
+    for (int i = 0; i < node->state.robots.size(); i++) {
         for (int j = 0; j < i - 1; j++) {
-            collide_entities(robots[i], robots[j]);
+            collide_entities(node->state.robots[i], node->state.robots[j]);
         }
     }
 
-    for (Entity robot : robots) {
-        collide_entities(robot, ball);
+    for (Entity robot : node->state.robots) {
+        collide_entities(robot, node->state.ball);
         Vec3 collision_normal = collide_with_arena(robot);
         if (collision_normal == Vec3::None) {
             robot.touch = false;
@@ -349,16 +351,16 @@ void Simulation::update(double delta_time) {
             robot.touch_normal = collision_normal;
         }
     }
-    collide_with_arena(ball);
+    collide_with_arena(node->state.ball);
 
-    if (abs(ball.position.getZ()) > arena.depth / 2.0 + ball.radius) {
+    if (abs(node->state.ball.position.getZ()) > arena.depth / 2.0 + node->state.ball.radius) {
         goal_scored();
     }
 
-    for (Entity robot : robots) {
+    for (Entity robot : node->state.robots) {
         if (robot.nitro == rules.MAX_NITRO_AMOUNT)
             continue;
-        for (Entity pack : nitro_packs) {
+        for (Entity pack : node->state.nitro_packs) {
             if (!pack.alive)
                 continue;
             if ((robot.position - pack.position).len() <= robot.radius + pack.radius) {
@@ -370,11 +372,10 @@ void Simulation::update(double delta_time) {
     }
 }
 
-void Simulation::moveRobots(double delta_time) {
-    for (Entity robot : robots) {
+void Simulation::moveRobots(shared_ptr<TreeNode> &node, double delta_time) {
+    for (Entity robot : node->state.robots) {
         if (robot.touch) {
             Vec3 target_velocity = clamp(robot.action_target_velocity, rules.ROBOT_MAX_GROUND_SPEED);
-            //wtf touch_normal??
             target_velocity = target_velocity - (robot.touch_normal * dot(robot.touch_normal, target_velocity));
             Vec3 target_velocity_change = target_velocity - robot.velocity;
             if (target_velocity_change.len() > 0.0) {
@@ -402,14 +403,24 @@ void Simulation::moveRobots(double delta_time) {
     }
 }
 
-void Simulation::tick() {
+void Simulation::tick(shared_ptr<TreeNode> parent) {
     double delta_time = 1.0 / rules.TICKS_PER_SECOND;
     double micro_dt = delta_time / rules.MICROTICKS_PER_TICK;
+
+    State st = State(parent->state);
+    st.current_tick++;
+
+    if (st.current_tick > 100 + current_tick)
+        return;
+
+    shared_ptr<TreeNode> node = make_shared<TreeNode>(st, parent.get());
+    parent->children.push_back(node);
+
     for (int i = 0; i < rules.MICROTICKS_PER_TICK; i++) {
-        update(micro_dt);
+        update(node, micro_dt);
     }
 
-    for (Entity pack : nitro_packs) {
+    for (Entity pack : node->state.nitro_packs) {
         if (pack.alive) {
             continue;
         }
@@ -417,18 +428,32 @@ void Simulation::tick() {
         if (pack.respawn_ticks == 0)
             pack.alive = true;
     }
+
+    processingNodes.push(node);
+    dumpNode(node);
+    
+    if (!processingNodes.empty()) {
+        cout<< "1" <<endl;
+        shared_ptr<TreeNode> tn = processingNodes.front();
+        cout<< "2::"<< tn->state.current_tick <<endl;
+        processingNodes.pop();
+        cout<< "3" <<endl;
+        tick(tn);
+        cout<< "4" <<endl;
+    }
 }
 
 void Simulation::init(const Game &g, const Rules &rul) {
     rules = rul;
-    
+
     State st;
     st.ball.setPosition(g.ball.x, g.ball.y, g.ball.z);
     st.ball.radius = g.ball.radius;
     st.ball.mass = rul.BALL_MASS;
-    
+    st.current_tick = 0;
+
     arena = rul.arena;
-    
+
     for (Robot rob: g.robots) {
         Entity erob;
         erob.id = rob.id;
@@ -439,48 +464,64 @@ void Simulation::init(const Game &g, const Rules &rul) {
         erob.touch = rob.touch;
         erob.mass = rul.ROBOT_MASS;
         erob.radius = rul.ROBOT_RADIUS;
-        rob.is_teammate?robots.push_back(erob):aliens.push_back(erob);
+        st.robots.push_back(erob);
     }
-    
-    baseNode = unique_ptr<TreeNode>(new TreeNode(st, 1, nullptr));
-    
+
+    baseNode = std::make_shared<TreeNode>(st, nullptr);
+
+    dumpNode(baseNode);
     inited = true;
 }
 
-void Simulation::go() {
+void Simulation::start() {
+#ifdef LOCAL_RUN
     std::stringstream ss;
     double delta_time = 1.0 / rules.TICKS_PER_SECOND;
     double micro_dt = delta_time / rules.MICROTICKS_PER_TICK;
 
-    ss << " delta time 1/" <<  rules.TICKS_PER_SECOND << "=" <<  1.0 / rules.TICKS_PER_SECOND << endl;
-    ss << " update dt = time/"<< rules.MICROTICKS_PER_TICK << "= " << micro_dt << endl;
+    ss << " delta time 1/" << rules.TICKS_PER_SECOND << "=" << 1.0 / rules.TICKS_PER_SECOND << endl;
+    ss << " update dt = time/" << rules.MICROTICKS_PER_TICK << "= " << micro_dt << endl;
     ss << " Rules gravity = " << rules.GRAVITY << endl;
+
     writeLog(ss);
     std::stringstream().swap(ss);
+#endif
 
-    for (int i = 0; i < 20; i++) {
-        tick();
-        
-        ss << " simulaton:: tick : " << current_tick << endl;
-        ss << " BALL radius:" << ball.radius;
-        ss << " coord:(" << ball.position.getX() << ";" << ball.position.getY() << ";" << ball.position.getZ() << ")";
-        ss << " velocity:(" << ball.velocity.getX() << ";" << ball.velocity.getY() << ";" << ball.velocity.getZ() << ")"
-           << std::endl;
+    tick(baseNode);
 
-        for (Entity r: robots) {
-            ss << " ROBOT: id: *" << r.id << "* " << "* ";
-            ss << " player_id: *" << r.player_id << "*";
-            ss << " coord: (" << r.position.getX() << ";" << r.position.getY() << ":" << r.position.getZ() << ")";
-            ss << " velocity: (" << r.velocity.getX() << ";" << r.velocity.getY() << ";" << r.velocity.getZ() << ")";
-            ss << " radius:" << r.radius;
-            ss << " nitro:" << r.nitro;
-            ss << " touch:" << r.touch;
-            ss << " touch_normal: x:" << r.touch_normal.getX() << "Y:" << r.touch_normal.getY() << "z:"
-               << r.touch_normal.getZ() << std::endl << std::endl;
-        }
+    cout<< "hz" << endl;
+#ifdef LOCAL_RUN
+    ss << " Simulation done " << endl;
 
-        writeLog(ss);
-        current_tick++;
-        std::stringstream().swap(ss);
+    writeLog(ss);
+    std::stringstream().swap(ss);
+#endif
+}
+
+void Simulation::dumpNode(shared_ptr<TreeNode> node) {
+#ifdef LOCAL_RUN
+    std::stringstream ss;
+    ss << " simulaton:: tick : " << node->state.current_tick << endl;
+    ss << " BALL radius:" << node->state.ball.radius;
+    ss << " coord:(" << node->state.ball.position.getX() << ";" << node->state.ball.position.getY() << ";"
+       << node->state.ball.position.getZ() << ")";
+    ss << " velocity:(" << node->state.ball.velocity.getX() << ";" << node->state.ball.velocity.getY() << ";"
+       << node->state.ball.velocity.getZ() << ")"
+       << std::endl;
+
+    for (Entity r: node->state.robots) {
+        ss << " ROBOT: id: *" << r.id << "* " << "* ";
+        ss << " player_id: *" << r.player_id << "*";
+        ss << " coord: (" << r.position.getX() << ";" << r.position.getY() << ":" << r.position.getZ() << ")";
+        ss << " velocity: (" << r.velocity.getX() << ";" << r.velocity.getY() << ";" << r.velocity.getZ() << ")";
+        ss << " radius:" << r.radius;
+        ss << " nitro:" << r.nitro;
+        ss << " touch:" << r.touch;
+        ss << " touch_normal: x:" << r.touch_normal.getX() << "Y:" << r.touch_normal.getY() << "z:"
+           << r.touch_normal.getZ() << std::endl << std::endl;
     }
+
+    writeLog(ss);
+    std::stringstream().swap(ss);
+#endif
 }

@@ -20,8 +20,9 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
 
     if (!sim.isInited()) {
         sim.init(game, rules);
-        sim.go();
+        sim.start();
     }
+    sim.setTick(game.current_tick);
 
     dumpTick(game);
 
