@@ -308,7 +308,9 @@ void Simulation::collide_entities(Entity &a, Entity &b) {
 }
 
 Vec3 Simulation::collide_with_arena(Entity &e) {
+
     Dan danArena = dan_to_arena(e.position);
+    if (e.id == tester_id) cout<< "Dan to arena " << danArena.distance << "  " << danArena.normal.toString() << endl;
     double penetration = e.radius - danArena.distance;
     if (penetration > 0.0) {
         e.position = e.position + danArena.normal * penetration;
@@ -341,7 +343,7 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
         }
     }
 
-    for (Entity robot : node->state.robots) {
+    for (Entity &robot : node->state.robots) {
         collide_entities(robot, node->state.ball);
         Vec3 collision_normal = collide_with_arena(robot);
         if (collision_normal == Vec3::None) {
@@ -357,10 +359,10 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
         goal_scored();
     }
 
-    for (Entity robot : node->state.robots) {
+    for (Entity &robot : node->state.robots) {
         if (robot.nitro == rules.MAX_NITRO_AMOUNT)
             continue;
-        for (Entity pack : node->state.nitro_packs) {
+        for (Entity &pack : node->state.nitro_packs) {
             if (!pack.alive)
                 continue;
             if ((robot.position - pack.position).len() <= robot.radius + pack.radius) {
@@ -373,20 +375,31 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
 }
 
 void Simulation::moveRobots(shared_ptr<TreeNode> &node, double delta_time) {
-    for (Entity robot : node->state.robots) {
+    for (Entity &robot : node->state.robots) {
+        if (robot.id == tester_id)  cout << "Robot id" << robot.id << " touch " << robot.touch << endl;
+        Vec3 action_target_velocity = Vec3(robot.action.target_velocity_x, robot.action.target_velocity_y,
+                                           robot.action.target_velocity_z);
+        if (robot.id == tester_id)cout << "0::  " << robot.action.target_velocity_z << " current vz "
+                                     << robot.velocity.getZ() << " Z pos: " << robot.position.getZ() << endl;
         if (robot.touch) {
-            Vec3 target_velocity = clamp(robot.action_target_velocity, rules.ROBOT_MAX_GROUND_SPEED);
+            Vec3 target_velocity = clamp(action_target_velocity, rules.ROBOT_MAX_GROUND_SPEED);
+            if (robot.id == tester_id) cout << "1::  " << target_velocity.toString() << endl;
             target_velocity = target_velocity - (robot.touch_normal * dot(robot.touch_normal, target_velocity));
+            if (robot.id == tester_id)cout << "2::  " << target_velocity.toString() << endl;
             Vec3 target_velocity_change = target_velocity - robot.velocity;
+            if (robot.id == tester_id)cout << "3::  " << target_velocity_change.toString() << endl;
             if (target_velocity_change.len() > 0.0) {
+                if (robot.id == tester_id)cout << "4::  " << target_velocity_change.len() << endl;
                 double acceleration = rules.ROBOT_ACCELERATION * max(0.0, robot.touch_normal.getY());
+                if (robot.id == tester_id)cout << "5::  " << robot.touch_normal.getY() << endl;
                 robot.velocity = robot.velocity + clamp(target_velocity_change.normalized() * acceleration * delta_time,
                                                         target_velocity_change.len());
+                if (robot.id == tester_id)cout << "Action new v Z " << robot.velocity.getZ() << endl;
             }
         }
 
-        if (robot.action_use_nitro) {
-            Vec3 target_velocity_change = clamp(robot.action_target_velocity - robot.velocity,
+        if (robot.action.use_nitro) {
+            Vec3 target_velocity_change = clamp(action_target_velocity - robot.velocity,
                                                 robot.nitro * rules.NITRO_POINT_VELOCITY_CHANGE);
             if (target_velocity_change.len() > 0.0) {
                 Vec3 acceleration = target_velocity_change.normalized() * rules.ROBOT_NITRO_ACCELERATION;
@@ -397,9 +410,9 @@ void Simulation::moveRobots(shared_ptr<TreeNode> &node, double delta_time) {
         }
         move(robot, delta_time);
         robot.radius = rules.ROBOT_MIN_RADIUS +
-                       (rules.ROBOT_MAX_RADIUS - rules.ROBOT_MIN_RADIUS) * robot.action_jump_speed /
+                       (rules.ROBOT_MAX_RADIUS - rules.ROBOT_MIN_RADIUS) * robot.action.jump_speed /
                        rules.ROBOT_MAX_JUMP_SPEED;
-        robot.radius_change_speed = robot.action_jump_speed;
+        robot.radius_change_speed = robot.action.jump_speed;
     }
 }
 
@@ -410,7 +423,21 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
     State st = State(parent->state);
     st.current_tick++;
 
-    if (st.current_tick > 100 + current_tick)
+    for (Entity &rob: st.robots) {
+        if (rob.id == tester_id) {
+            cout << "ROB Velocity: " << rob.velocity.toString() << " position:" << rob.position.toString() << endl;
+            Vec3 target_pos = Vec3(rob.position.getZ(), 0.0, -(rules.arena.depth / 2.0) + rules.arena.bottom_radius);
+            Vec3 target_velocity = Vec3(rob.position.getX(), 0.0, target_pos.getZ() - rob.position.getZ()).mul(
+                    rules.ROBOT_MAX_GROUND_SPEED);
+            rob.action.target_velocity_x = target_velocity.getX();
+            rob.action.target_velocity_y = target_velocity.getY();
+            rob.action.target_velocity_z = target_velocity.getZ();
+            rob.action.jump_speed = 0.0;
+            rob.action.use_nitro = false;
+        }
+    }
+
+    if (st.current_tick > 10 + current_tick)
         return;
 
     shared_ptr<TreeNode> node = make_shared<TreeNode>(st, parent.get());
@@ -431,18 +458,18 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
 
     processingNodes.push(node);
     dumpNode(node);
-    
+
     if (!processingNodes.empty()) {
-        
+
         shared_ptr<TreeNode> tn = processingNodes.front();
-        cout<< "2::"<< tn->state.current_tick <<endl;
+        cout << "2::" << tn->state.current_tick << endl;
         processingNodes.pop();
         tick(tn);
     }
 }
 
 void Simulation::init(const Game &g, const Rules &rul) {
-    cout<< "Init"<< endl;
+    cout << "Init" << endl;
     rules = rul;
     std::srand(rul.seed);
 
@@ -454,6 +481,16 @@ void Simulation::init(const Game &g, const Rules &rul) {
 
     arena = rul.arena;
 
+    if (tester_id == -1) {
+        int k = 1000;
+        for (Robot r: g.robots) {
+            if (r.id < k)
+                k = r.id;
+        }
+        tester_id = k;
+        cout << "TesterId :" << tester_id << endl;
+    }
+
     for (Robot rob: g.robots) {
         Entity erob;
         erob.id = rob.id;
@@ -464,6 +501,19 @@ void Simulation::init(const Game &g, const Rules &rul) {
         erob.touch = rob.touch;
         erob.mass = rul.ROBOT_MASS;
         erob.radius = rul.ROBOT_RADIUS;
+
+        if (rob.id == tester_id) {
+            cout << "ROB VZ: " << rob.velocity_z << " Z:" << rob.z << endl;
+            Vec3 target_pos = Vec3(rob.x, 0.0, -(rules.arena.depth / 2.0) + rules.arena.bottom_radius);
+            Vec3 target_velocity = Vec3(rob.x, 0.0, target_pos.getZ() - rob.z).mul(rules.ROBOT_MAX_GROUND_SPEED);
+            cout << "Target velocity " << target_velocity.toString() << endl;
+            erob.action.target_velocity_x = target_velocity.getX();
+            erob.action.target_velocity_y = target_velocity.getY();
+            erob.action.target_velocity_z = target_velocity.getZ();
+            erob.action.jump_speed = 0.0;
+            erob.action.use_nitro = false;
+        }
+
         st.robots.push_back(erob);
     }
 
@@ -471,7 +521,7 @@ void Simulation::init(const Game &g, const Rules &rul) {
 
     dumpNode(baseNode);
     inited = true;
-    cout<< "inited"<<endl;
+    cout << "inited" << endl;
 }
 
 void Simulation::start() {
@@ -490,7 +540,7 @@ void Simulation::start() {
 
     tick(baseNode);
 
-    cout<< "hz" << endl;
+    cout << "hz" << endl;
 #ifdef LOCAL_RUN
     ss << " Simulation done " << endl;
 

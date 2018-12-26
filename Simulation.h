@@ -15,13 +15,14 @@
 #include "model/Rules.h"
 #include "model/Game.h"
 #include "model/Robot.h"
+#include "model/Action.h"
 #include "cvl_vec3.h"
 #include <queue>
 
 class Entity {
 public:
-    Entity() : position(0, 0, 0), velocity(0, 0, 0), action_target_velocity(0, 0, 0), touch_normal(Vec3::None),
-               radius(0), mass(0), radius_change_speed(0), action_jump_speed(0), action_use_nitro(false),
+    Entity() : position(0, 0, 0), velocity(0, 0, 0), touch_normal(Vec3::None),
+               radius(0), mass(0), radius_change_speed(0),
                touch(false), nitro(0), alive(false), respawn_ticks(0) {}
 
     ~Entity() {}
@@ -29,13 +30,11 @@ public:
     Vec3 position;
     Vec3 velocity;
     Vec3 touch_normal;
-    Vec3 action_target_velocity;
+    Action action;
 
     double radius;
     double mass;
     double radius_change_speed;
-    double action_jump_speed;
-    bool action_use_nitro;
     bool touch;
     double nitro;
     bool alive;
@@ -124,11 +123,14 @@ class Simulation {
 private:
     bool inited;
     int current_tick;
+
+    int tester_id;
+
     shared_ptr<TreeNode> baseNode;
     queue<shared_ptr<TreeNode>> processingNodes;
 
 public:
-    Simulation() : inited(false), current_tick(0) {}
+    Simulation() : inited(false), current_tick(0), tester_id(-1) {}
 
     ~Simulation() {}
 
