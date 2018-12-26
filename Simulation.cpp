@@ -28,7 +28,8 @@ Dan Simulation::min(Dan a, Dan b) {
     return a.distance < b.distance ? a : b;
 }
 
-Dan Simulation::dan_to_arena_quarter(Vec3 point) {    // Ground
+Dan Simulation::dan_to_arena_quarter(Vec3 point) {
+    // Ground
     Dan dan = dan_to_plane(point, Vec3(0.0, 0.0, 0.0), Vec3(0.0, 1.0, 0.0));
 
     // Ceiling
@@ -310,7 +311,7 @@ void Simulation::collide_entities(Entity &a, Entity &b) {
 Vec3 Simulation::collide_with_arena(Entity &e) {
 
     Dan danArena = dan_to_arena(e.position);
-    if (e.id == tester_id) cout<< "Dan to arena " << danArena.distance << "  " << danArena.normal.toString() << endl;
+    if (e.id == tester_id) cout << "Dan to arena " << danArena.distance << "  " << danArena.normal.toString() << endl;
     double penetration = e.radius - danArena.distance;
     if (penetration > 0.0) {
         e.position = e.position + danArena.normal * penetration;
@@ -376,25 +377,26 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
 
 void Simulation::moveRobots(shared_ptr<TreeNode> &node, double delta_time) {
     for (Entity &robot : node->state.robots) {
-        if (robot.id == tester_id)  cout << "Robot id" << robot.id << " touch " << robot.touch << endl;
+        if (robot.id == tester_id) cout << "Robot id" << robot.id << " touch " << robot.touch << endl;
         Vec3 action_target_velocity = Vec3(robot.action.target_velocity_x, robot.action.target_velocity_y,
                                            robot.action.target_velocity_z);
-        if (robot.id == tester_id)cout << "0::  " << robot.action.target_velocity_z << " current vz "
-                                     << robot.velocity.getZ() << " Z pos: " << robot.position.getZ() << endl;
+        if (robot.id == tester_id)
+            cout << "0::  " << robot.action.target_velocity_z << " current vz "
+                 << robot.velocity.toString() << " Z pos: " << robot.position.toString() << endl;
         if (robot.touch) {
             Vec3 target_velocity = clamp(action_target_velocity, rules.ROBOT_MAX_GROUND_SPEED);
-            if (robot.id == tester_id) cout << "1::  " << target_velocity.toString() << endl;
+            if (robot.id == tester_id) cout << "1:: tv " << target_velocity.toString() << endl;
             target_velocity = target_velocity - (robot.touch_normal * dot(robot.touch_normal, target_velocity));
-            if (robot.id == tester_id)cout << "2::  " << target_velocity.toString() << endl;
+            if (robot.id == tester_id) cout << "2:: tv " << target_velocity.toString() << endl;
             Vec3 target_velocity_change = target_velocity - robot.velocity;
-            if (robot.id == tester_id)cout << "3::  " << target_velocity_change.toString() << endl;
+            if (robot.id == tester_id) cout << "3:: vc " << target_velocity_change.toString() << endl;
             if (target_velocity_change.len() > 0.0) {
-                if (robot.id == tester_id)cout << "4::  " << target_velocity_change.len() << endl;
+                if (robot.id == tester_id) cout << "4:: vc len " << target_velocity_change.len() << endl;
                 double acceleration = rules.ROBOT_ACCELERATION * max(0.0, robot.touch_normal.getY());
-                if (robot.id == tester_id)cout << "5::  " << robot.touch_normal.getY() << endl;
+                if (robot.id == tester_id) cout << "5::  NORMAL " << robot.touch_normal.toString()<< " acceleration:: " << acceleration << endl;
                 robot.velocity = robot.velocity + clamp(target_velocity_change.normalized() * acceleration * delta_time,
                                                         target_velocity_change.len());
-                if (robot.id == tester_id)cout << "Action new v Z " << robot.velocity.getZ() << endl;
+                if (robot.id == tester_id) cout << "Action new v " << robot.velocity.toString() << endl;
             }
         }
 
@@ -426,8 +428,8 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
     for (Entity &rob: st.robots) {
         if (rob.id == tester_id) {
             cout << "ROB Velocity: " << rob.velocity.toString() << " position:" << rob.position.toString() << endl;
-            Vec3 target_pos = Vec3(rob.position.getZ(), 0.0, -(rules.arena.depth / 2.0) + rules.arena.bottom_radius);
-            Vec3 target_velocity = Vec3(rob.position.getX(), 0.0, target_pos.getZ() - rob.position.getZ()).mul(
+            Vec3 target_pos = Vec3(rob.position.getX(), 0.0, -(rules.arena.depth / 2.0) + rules.arena.bottom_radius);
+            Vec3 target_velocity = Vec3(0.0, 0.0, target_pos.getZ() - rob.position.getZ()).mul(
                     rules.ROBOT_MAX_GROUND_SPEED);
             rob.action.target_velocity_x = target_velocity.getX();
             rob.action.target_velocity_y = target_velocity.getY();
@@ -505,7 +507,7 @@ void Simulation::init(const Game &g, const Rules &rul) {
         if (rob.id == tester_id) {
             cout << "ROB VZ: " << rob.velocity_z << " Z:" << rob.z << endl;
             Vec3 target_pos = Vec3(rob.x, 0.0, -(rules.arena.depth / 2.0) + rules.arena.bottom_radius);
-            Vec3 target_velocity = Vec3(rob.x, 0.0, target_pos.getZ() - rob.z).mul(rules.ROBOT_MAX_GROUND_SPEED);
+            Vec3 target_velocity = Vec3(0.0, 0.0, target_pos.getZ() - rob.z).mul(rules.ROBOT_MAX_GROUND_SPEED);
             cout << "Target velocity " << target_velocity.toString() << endl;
             erob.action.target_velocity_x = target_velocity.getX();
             erob.action.target_velocity_y = target_velocity.getY();

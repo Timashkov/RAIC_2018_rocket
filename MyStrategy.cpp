@@ -12,20 +12,20 @@ using namespace std;
 
 const double EPS = 1e-5;
 
-MyStrategy::MyStrategy():tester_id(-1) {
-    cout<< "Create my strategy" << endl;
+MyStrategy::MyStrategy() : tester_id(-1) {
+    cout << "Create my strategy" << endl;
 }
 
 void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Action &action) {
     // Поэтому, если мы не касаемся земли, будет использовать нитро
     // чтобы как можно быстрее попасть обратно на землю
 
-    cout<< "start act "<<game.current_tick<<endl;
+    cout << "start act " << game.current_tick << endl;
     if (!sim.isInited()) {
-        cout<< "Sim not inited - init"<< endl;
+        cout << "Sim not inited - init" << endl;
         sim.init(game, rules);
         sim.start();
-        cout<< "sim done" <<endl;
+        cout << "sim done" << endl;
     }
     sim.setTick(game.current_tick);
 
@@ -46,20 +46,20 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
 
     const double JUMP_TIME = 0.2;
     const double MAX_JUMP_HEIGHT = 3.0;
-    
-    if (tester_id == -1){
+
+    if (tester_id == -1) {
         int k = 1000;
-        for (Robot r: game.robots){
+        for (Robot r: game.robots) {
             if (r.id < k)
                 k = r.id;
         }
         tester_id = k;
     }
-    
-    if (me.id == tester_id){
-        cout<< "ME VZ: " << me.velocity_z << " Z:" << me.z << endl;
+
+    if (me.id == tester_id) {
+        cout << "ME VZ: " << me.velocity_z << " Z:" << me.z << endl;
         Vec3 target_pos = Vec3(me.x, 0.0, -(rules.arena.depth / 2.0) + rules.arena.bottom_radius);
-        Vec3 target_velocity = Vec3(me.x,0.0, target_pos.getZ() - me.z).mul(rules.ROBOT_MAX_GROUND_SPEED);
+        Vec3 target_velocity = Vec3(0.0, 0.0, target_pos.getZ() - me.z).mul(rules.ROBOT_MAX_GROUND_SPEED);
         action.target_velocity_x = target_velocity.getX();
         action.target_velocity_y = target_velocity.getY();
         action.target_velocity_z = target_velocity.getZ();
@@ -68,8 +68,8 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
 
         return;
     }
-    cout<< "Not tester"<<endl;
-    
+    cout << "Not tester" << endl;
+
     // Если при прыжке произойдет столкновение с мячом, и мы находимся
     // с той же стороны от мяча, что и наши ворота, прыгнем, тем самым
     // ударив по мячу сильнее в сторону противника
