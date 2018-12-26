@@ -48,7 +48,12 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
     const double MAX_JUMP_HEIGHT = 3.0;
     
     if (tester_id == -1){
-        tester_id = me.id;
+        int k = 1000;
+        for (Robot r: game.robots){
+            if (r.id < k)
+                k = r.id;
+        }
+        tester_id = k;
     }
     
     if (me.id == tester_id){
@@ -60,6 +65,7 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
         action.target_velocity_z = target_velocity.getZ();
         action.jump_speed = 0.0;
         action.use_nitro = false;
+
         return;
     }
     cout<< "Not tester"<<endl;
