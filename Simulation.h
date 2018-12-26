@@ -23,7 +23,7 @@ class Entity {
 public:
     Entity() : position(0, 0, 0), velocity(0, 0, 0), touch_normal(Vec3::None),
                radius(0), mass(0), radius_change_speed(0),
-               touch(false), nitro(0), alive(false), respawn_ticks(0) {}
+               touch(false), nitro(0), alive(false), respawn_ticks(0),arena_e(0.0) {}
 
     ~Entity() {}
 
@@ -41,6 +41,7 @@ public:
     int respawn_ticks;
     int id;
     int player_id;
+    double arena_e;
 
     inline void setPosition(Vec3 pos) {
         position.setX(pos.getX());
@@ -124,18 +125,22 @@ private:
     bool inited;
     int current_tick;
 
-    int tester_id;
+    int goal_keeper_id;
 
     shared_ptr<TreeNode> baseNode;
     queue<shared_ptr<TreeNode>> processingNodes;
+    
+    Rules rules;
+    Arena arena;
 
 public:
-    Simulation() : inited(false), current_tick(0), tester_id(-1) {}
+    Simulation() : inited(false), current_tick(0), goal_keeper_id(-1) {}
 
     ~Simulation() {}
 
-    Rules rules;
-    Arena arena;
+    void init(const Game &g, const Rules &rul, const int goalKeeperId);
+    
+    void start();
 
     Dan dan_to_plane(Vec3 point, Vec3 point_on_plane, Vec3 plane_normal);
 
@@ -147,7 +152,7 @@ public:
 
     Dan dan_to_arena_quarter(Vec3 point);
 
-    Dan dan_to_arena(Vec3 &point);
+    Dan dan_to_arena(Vec3 point);
 
     void collide_entities(Entity &a, Entity &b);
 
@@ -169,10 +174,6 @@ public:
     };
 
     inline bool isInited() const { return inited; };
-
-    void init(const Game &g, const Rules &rul);
-
-    void start();
 
     void setTick(int tck){ current_tick = tck;}
 
