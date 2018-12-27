@@ -17,68 +17,11 @@
 #include "model/Robot.h"
 #include "model/Action.h"
 #include "cvl_vec3.h"
+#include "RoleParameters.h"
 #include <queue>
+#include "SimulationEntity.h"
 
-class Entity {
-public:
-    Entity() : position(0, 0, 0), velocity(0, 0, 0), touch_normal(Vec3::None),
-               radius(0), mass(0), radius_change_speed(0),
-               touch(false), nitro(0), alive(false), respawn_ticks(0),arena_e(0.0) {}
 
-    ~Entity() {}
-
-    Vec3 position;
-    Vec3 velocity;
-    Vec3 touch_normal;
-    Action action;
-
-    double radius;
-    double mass;
-    double radius_change_speed;
-    bool touch;
-    double nitro;
-    bool alive;
-    int respawn_ticks;
-    int id;
-    int player_id;
-    double arena_e;
-
-    inline void setPosition(Vec3 pos) {
-        position.setX(pos.getX());
-        position.setY(pos.getY());
-        position.setZ(pos.getZ());
-    }
-
-    inline void setPosition(double x, double y, double z) {
-        position.setX(x);
-        position.setY(y);
-        position.setZ(z);
-    }
-
-    inline void setVelocity(Vec3 vel) {
-        velocity.setX(vel.getX());
-        velocity.setY(vel.getY());
-        velocity.setZ(vel.getZ());
-    }
-
-    inline void setVelocity(double x, double y, double z) {
-        velocity.setX(x);
-        velocity.setY(y);
-        velocity.setZ(z);
-    }
-
-    inline void setNormal(Vec3 vel) {
-        touch_normal.setX(vel.getX());
-        touch_normal.setY(vel.getY());
-        touch_normal.setZ(vel.getZ());
-    }
-
-    inline void setNormal(double x, double y, double z) {
-        touch_normal.setX(x);
-        touch_normal.setY(y);
-        touch_normal.setZ(z);
-    }
-};
 
 class Dan {
 public:
@@ -99,9 +42,9 @@ public:
 
     ~State() {};
 
-    Entity ball;
-    vector<Entity> robots;
-    vector<Entity> nitro_packs;
+    SimulationEntity ball;
+    vector<SimulationEntity> robots;
+    vector<SimulationEntity> nitro_packs;
     int current_tick;
 };
 
@@ -125,7 +68,7 @@ private:
     bool inited;
     int current_tick;
 
-    int goal_keeper_id;
+    RoleParameters goalKeeper;
 
     shared_ptr<TreeNode> baseNode;
     queue<shared_ptr<TreeNode>> processingNodes;
@@ -134,11 +77,11 @@ private:
     Arena arena;
 
 public:
-    Simulation() : inited(false), current_tick(0), goal_keeper_id(-1) {}
+    Simulation() : inited(false), current_tick(0) {}
 
     ~Simulation() {}
 
-    void init(const Game &g, const Rules &rul, const int goalKeeperId);
+    void init(const Game &g, const Rules &rul, const RoleParameters& goalKeeper);
     
     void start();
 
@@ -154,13 +97,13 @@ public:
 
     Dan dan_to_arena(Vec3 point);
 
-    void collide_entities(Entity &a, Entity &b);
+    void collide_entities(SimulationEntity &a, SimulationEntity &b);
 
-    Vec3 collide_with_arena(Entity &e);
+    Vec3 collide_with_arena(SimulationEntity &e);
 
     void tick(shared_ptr<TreeNode> node);
 
-    void move(Entity &e, double delta_time);
+    void move(SimulationEntity &e, double delta_time);
 
     void update(shared_ptr<TreeNode> &node, double delta_time);
 

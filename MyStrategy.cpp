@@ -12,14 +12,26 @@ using namespace std;
 
 const double EPS = 1e-5;
 
-MyStrategy::MyStrategy() : goal_keeper_id(<#args#>)(-1) {}
+MyStrategy::MyStrategy() {
+
+}
 
 void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Action &action) {
     // Поэтому, если мы не касаемся земли, будет использовать нитро
     // чтобы как можно быстрее попасть обратно на землю
 
+    if (goalKeeper.robotId == -1 && game.robots.size() > 2) {
+        int k = 1000;
+        for (Robot r: game.robots) {
+            if (r.id < k)
+                k = r.id;
+        }
+        goalKeeper.robotId = k;
+        goalKeeper.anchorPoint = Vec3(0.0, 0.0, -(rules.arena.depth * 2.0 / 5.0));
+    }
+
     if (!sim.isInited()) {
-        sim.init(game, rules);
+        sim.init(game, rules, goalKeeper);
         sim.start();
     }
     sim.setTick(game.current_tick);
@@ -39,16 +51,7 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
 
     unique_ptr<BallExtended> ballExtended(new BallExtended(game.ball));
 
-    if (goal_keeper_id == -1 && game.robots.size() > 2) {
-        int k = 1000;
-        for (Robot r: game.robots) {
-            if (r.id < k)
-                k = r.id;
-        }
-        goal_keeper_id = k;
-    }
-    
-    if (me.id == goal_keeper_id ){
+    if (me.id == goalKeeper.robotId ){
         actAsGoalKeeper(me, rules, game, action);
         return;
     }

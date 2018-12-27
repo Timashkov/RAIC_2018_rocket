@@ -11,7 +11,7 @@
 #include "Simulation.h"
 #include "CVL_Utils.h"
 
-void Simulation::init(const Game &g, const Rules &rul, const int goalKeeperId) {
+void Simulation::init(const Game &g, const Rules &rul, const RoleParameters& goalKeeper) {
     rules = rul;
     std::srand(rul.seed);
     
@@ -24,10 +24,10 @@ void Simulation::init(const Game &g, const Rules &rul, const int goalKeeperId) {
     
     arena = rul.arena;
     
-    goal_keeper_id = goalKeeperId;
+    this->goalKeeper = goalKeeper;
     
     for (Robot rob: g.robots) {
-        Entity erob;
+        SimulationEntity erob;
         erob.id = rob.id;
         erob.player_id = rob.player_id;
         erob.setPosition(rob.x, rob.y, rob.z);
@@ -38,8 +38,8 @@ void Simulation::init(const Game &g, const Rules &rul, const int goalKeeperId) {
         erob.radius = rul.ROBOT_RADIUS;
         erob.arena_e = rul.ROBOT_ARENA_E;
         
-        if (rob.id == goalKeeperId) {
-            Vec3 target_pos = Vec3(0.0, 0.0, -(rules.arena.depth / 4.0)); // goal keeper default start position
+        if (rob.id == goalKeeper.robotId) {
+            Vec3 target_pos = goalKeeper.anchorPoint; // goal keeper default start position
             Vec3 target_velocity = Vec3(-rob.x, 0.0, target_pos.getZ() - rob.z).normalized().mul(rules.ROBOT_MAX_GROUND_SPEED);
             erob.action.target_velocity_x = target_velocity.getX();
             erob.action.target_velocity_y = target_velocity.getY();
@@ -96,7 +96,7 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
     State st = State(parent->state);
     st.current_tick++;
     
-    for (Entity &rob: st.robots) {
+    for (SimulationEntity &rob: st.robots) {
         //        TODO: expand tree
 //        if (rob.id == tester_id) {
 //            Vec3 target_pos = Vec3(rob.position.getX(), 0.0, -(rules.arena.depth / 2.0) + rules.arena.bottom_radius);
@@ -120,7 +120,7 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
         update(node, micro_dt);
     }
     
-    for (Entity pack : node->state.nitro_packs) {
+    for (SimulationEntity pack : node->state.nitro_packs) {
         if (pack.alive) {
             continue;
         }
@@ -152,7 +152,7 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
         }
     }
     
-    for (Entity &robot : node->state.robots) {
+    for (SimulationEntity &robot : node->state.robots) {
         collide_entities(robot, node->state.ball);
         Vec3 collision_normal = collide_with_arena(robot);
         if (collision_normal == Vec3::None) {
@@ -168,10 +168,10 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
         goal_scored();
     }
     
-    for (Entity &robot : node->state.robots) {
+    for (SimulationEntity &robot : node->state.robots) {
         if (robot.nitro == rules.MAX_NITRO_AMOUNT)
             continue;
-        for (Entity &pack : node->state.nitro_packs) {
+        for (SimulationEntity &pack : node->state.nitro_packs) {
             if (!pack.alive)
                 continue;
             if ((robot.position - pack.position).len() <= robot.radius + pack.radius) {
@@ -184,7 +184,7 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
 }
 
 void Simulation::moveRobots(shared_ptr<TreeNode> &node, double delta_time) {
-    for (Entity &robot : node->state.robots) {
+    for (SimulationEntity &robot : node->state.robots) {
         Vec3 action_target_velocity = Vec3(robot.action.target_velocity_x, robot.action.target_velocity_y,
                                            robot.action.target_velocity_z);
         if (robot.touch) {
@@ -216,7 +216,7 @@ void Simulation::moveRobots(shared_ptr<TreeNode> &node, double delta_time) {
     }
 }
 
-void Simulation::move(Entity &e, double delta_time) {
+void Simulation::move(SimulationEntity &e, double delta_time) {
     e.velocity = clamp(e.velocity, rules.MAX_ENTITY_SPEED);
     e.position = e.position + e.velocity * delta_time;
     e.position.setY(e.position.getY() - rules.GRAVITY * delta_time * delta_time / 2.0);
@@ -224,7 +224,7 @@ void Simulation::move(Entity &e, double delta_time) {
 }
 
 // Направление определено жестко, рандом только в скорости после удара
-void Simulation::collide_entities(Entity &a, Entity &b) {
+void Simulation::collide_entities(SimulationEntity &a, SimulationEntity &b) {
     Vec3 delta_position = b.position - a.position;
     double distance = delta_position.len();
     double penetration = a.radius + b.radius - distance;
@@ -244,7 +244,7 @@ void Simulation::collide_entities(Entity &a, Entity &b) {
     }
 }
 
-Vec3 Simulation::collide_with_arena(Entity &e) {
+Vec3 Simulation::collide_with_arena(SimulationEntity &e) {
     
     Dan danArena = dan_to_arena(e.position);
     double penetration = e.radius - danArena.distance;
@@ -541,7 +541,7 @@ void Simulation::dumpNode(shared_ptr<TreeNode> node) {
     ss << " coord:" << node->state.ball.position.toString();
     ss << " velocity:" << node->state.ball.velocity.toString() << std::endl;
 
-    for (Entity r: node->state.robots) {
+    for (SimulationEntity r: node->state.robots) {
         ss << " ROBOT: id: " << r.id;
         ss << " player_id: " << r.player_id;
         ss << " coord: " << r.position.toString();

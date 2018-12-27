@@ -131,7 +131,9 @@ void testRun(){
     r4.touch = true;
     game->robots.push_back(r4);
 
-    sim.init(*game, *rules);
+    RoleParameters gk;
+
+    sim.init(*game, *rules, gk);
     sim.start();
 }
 

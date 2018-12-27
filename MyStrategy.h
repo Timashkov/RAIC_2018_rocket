@@ -8,11 +8,13 @@
 #include "Strategy.h"
 #include "Extensions.h"
 #include "Simulation.h"
+#include "RoleParameters.h"
 
 class MyStrategy : public Strategy {
 private:
     Simulation sim;
-    int goal_keeper_id;
+    RoleParameters goalKeeper;
+    vector<RoleParameters> forwards;
 public:
     MyStrategy();
     ~MyStrategy(){}
