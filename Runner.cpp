@@ -2,6 +2,7 @@
 
 #include "Runner.h"
 #include "MyStrategy.h"
+#include <iomanip>
 
 using namespace model;
 using namespace std;
@@ -61,7 +62,7 @@ void testRun(){
     game->ball.velocity_y = 0.0;
     game->ball.velocity_z = 0.0;
     game->ball.radius = 2.0;
-
+    
     game->current_tick = 0;
     Robot r1 = Robot();
     r1.id = 1;
@@ -130,28 +131,44 @@ void testRun(){
     r4.touch_normal_z=0.0;
     r4.touch = true;
     game->robots.push_back(r4);
-
+    
     RoleParameters gk;
-
-    sim.init(*game, *rules, gk);
+    vector<RoleParameters> forwards;
+    
+    sim.init(*game, *rules, gk, forwards);
     sim.start();
 }
 
-int main(int argc, char* argv[]) {
-    if (argc == 4) {
-        Runner runner(argv[1], argv[2], argv[3]);
-        runner.run();
-    } else {
-        Runner runner("127.0.0.1", "31001", "0000000000000000");
-        runner.run();
-    }
+void testRun2(){
 
-//    testRun();
+    //3.251846380693756
+    //[1]    double    3.2518466666666828
+    //[1]    double    3.2518500000000001
+    
+    std::cout<< __DBL_EPSILON__ << std::endl;
+    
+    double val = 3.2518466666666828;
+    std::cout<<std::setprecision (15)<< val <<std::endl;
+    double val1 = round( val * 100000.0 ) / 100000.0;
+    
+    std::cout<<std::setprecision (15)<< val1 <<"  "<<(val1==val)<<"  "<< (abs(val1-val) < 0.00001) <<std::endl;
+}
+
+int main(int argc, char* argv[]) {
+//    if (argc == 4) {
+//        Runner runner(argv[1], argv[2], argv[3]);
+//        runner.run();
+//    } else {
+//        Runner runner("127.0.0.1", "31001", "0000000000000000");
+//        runner.run();
+//    }
+    
+        testRun2();
     return 0;
 }
 
 Runner::Runner(const char* host, const char* port, const char* token)
-    : remoteProcessClient(host, atoi(port)), token(token) {
+: remoteProcessClient(host, atoi(port)), token(token) {
 }
 
 void Runner::run() {

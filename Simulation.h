@@ -19,33 +19,34 @@
 #include "cvl_vec3.h"
 #include "RoleParameters.h"
 #include <queue>
-#include "SimulationEntity.h"
+#include "SimulationEngine.h"
 
+#define never_collision 1000000
 
-
-class Dan {
+class CollisionParams {
 public:
-    Dan(double d, const Vec3 &n) : distance(d), normal(n) {}
-
-    ~Dan() {}
-
-    double distance;
-    Vec3 normal;
+    CollisionParams(int t, Vec3 p, int rob_id):tick(t),point(p),robot_id(rob_id){}
+    ~CollisionParams() {}
+    
+    int tick;
+    Vec3 point;
+    int robot_id;
 };
 
 class State {
 public:
-    State() {};
+    State(): ball_collision(nullptr){};
 
-//    State(const State &source) : ball(source.ball), robots(source.robots), nitro_packs(source.nitro_packs),
-//                           current_tick(source.current_tick + 1) {}
-
+    State(const State &source) : ball(source.ball), robots(source.robots), nitro_packs(source.nitro_packs),
+        current_tick(source.current_tick), ball_collision(source.ball_collision), robots_collision(source.robots_collision){}
     ~State() {};
 
     SimulationEntity ball;
     vector<SimulationEntity> robots;
     vector<SimulationEntity> nitro_packs;
     int current_tick;
+    CollisionParams * ball_collision;
+    vector<CollisionParams> robots_collision;
 };
 
 class TreeNode {
@@ -69,41 +70,25 @@ private:
     int current_tick;
 
     RoleParameters goalKeeper;
-
+    vector<RoleParameters> forwards;
+    
     shared_ptr<TreeNode> baseNode;
     queue<shared_ptr<TreeNode>> processingNodes;
     
     Rules rules;
     Arena arena;
+    std::unique_ptr<SimulationEngine> engine;
 
 public:
     Simulation() : inited(false), current_tick(0) {}
 
     ~Simulation() {}
 
-    void init(const Game &g, const Rules &rul, const RoleParameters& goalKeeper);
+    void init(const Game &g, const Rules &rul, const RoleParameters& goalKeeper, const vector<RoleParameters>& forwards);
     
     void start();
 
-    Dan dan_to_plane(Vec3 point, Vec3 point_on_plane, Vec3 plane_normal);
-
-    Dan dan_to_sphere_inner(Vec3 point, Vec3 sphere_center, double sphere_radius);
-
-    Dan dan_to_sphere_outer(Vec3 point, Vec3 sphere_center, double sphere_radius);
-
-    Dan min(Dan a, Dan b);
-
-    Dan dan_to_arena_quarter(Vec3 point);
-
-    Dan dan_to_arena(Vec3 point);
-
-    void collide_entities(SimulationEntity &a, SimulationEntity &b);
-
-    Vec3 collide_with_arena(SimulationEntity &e);
-
     void tick(shared_ptr<TreeNode> node);
-
-    void move(SimulationEntity &e, double delta_time);
 
     void update(shared_ptr<TreeNode> &node, double delta_time);
 
@@ -111,16 +96,19 @@ public:
 
     inline void goal_scored() {};
 
-    inline double random(double min, double max) {
-        double f = (double) std::rand() / RAND_MAX;
-        return min + f * (max - min);
-    };
-
     inline bool isInited() const { return inited; };
 
-    void setTick(int tck){ current_tick = tck;}
+    void setTick(const Game &g);
 
     void dumpNode(shared_ptr<TreeNode> node);
+    
+    void adjustRobotsPositions(const vector<Robot>& rs);
+    
+    void truncTree(shared_ptr<TreeNode> tn);
+    
+    void simulateNextSteps(shared_ptr<TreeNode> base);
+    
+    inline TreeNode* getBaseNode() const { return baseNode.get();};
 };
 
 #endif /* Simulation_h */

@@ -1,4 +1,3 @@
-#include <memory>
 
 //
 //  Simulation.cpp
@@ -10,8 +9,9 @@
 
 #include "Simulation.h"
 #include "CVL_Utils.h"
+#include <memory>
 
-void Simulation::init(const Game &g, const Rules &rul, const RoleParameters& goalKeeper) {
+void Simulation::init(const Game &g, const Rules &rul, const RoleParameters& goalKeeper, const vector<RoleParameters>& forwards) {
     rules = rul;
     std::srand(rul.seed);
     
@@ -23,8 +23,10 @@ void Simulation::init(const Game &g, const Rules &rul, const RoleParameters& goa
     st.current_tick = 0;
     
     arena = rul.arena;
+    engine = std::unique_ptr<SimulationEngine>(new SimulationEngine(rul));
     
     this->goalKeeper = goalKeeper;
+    this->forwards = forwards;
     
     for (Robot rob: g.robots) {
         SimulationEntity erob;
@@ -40,21 +42,26 @@ void Simulation::init(const Game &g, const Rules &rul, const RoleParameters& goa
         
         if (rob.id == goalKeeper.robotId) {
             Vec3 target_pos = goalKeeper.anchorPoint; // goal keeper default start position
-            Vec3 target_velocity = Vec3(-rob.x, 0.0, target_pos.getZ() - rob.z).normalized().mul(rules.ROBOT_MAX_GROUND_SPEED);
-            erob.action.target_velocity_x = target_velocity.getX();
-            erob.action.target_velocity_y = target_velocity.getY();
-            erob.action.target_velocity_z = target_velocity.getZ();
-            erob.action.jump_speed = 0.0;
-            erob.action.use_nitro = false;
-        } else {
-            Vec3 target_pos = Vec3(st.ball.position);
-            target_pos.setY(0.0);
             Vec3 target_velocity = Vec3(target_pos.getX()-rob.x, 0.0, target_pos.getZ() - rob.z).normalized().mul(rules.ROBOT_MAX_GROUND_SPEED);
             erob.action.target_velocity_x = target_velocity.getX();
             erob.action.target_velocity_y = target_velocity.getY();
             erob.action.target_velocity_z = target_velocity.getZ();
             erob.action.jump_speed = 0.0;
             erob.action.use_nitro = false;
+        } else {
+            // Our robots
+            for (RoleParameters rp: forwards){
+                if (rp.robotId == rob.id){
+                    Vec3 target_pos = rp.anchorPoint;
+                    Vec3 target_velocity = Vec3(target_pos.getX()-rob.x, 0.0, target_pos.getZ() - rob.z).normalized().mul(rules.ROBOT_MAX_GROUND_SPEED);
+                    erob.action.target_velocity_x = target_velocity.getX();
+                    erob.action.target_velocity_y = target_velocity.getY();
+                    erob.action.target_velocity_z = target_velocity.getZ();
+                    erob.action.jump_speed = 0.0;
+                    erob.action.use_nitro = false;
+                }
+            }
+            
         }
         
         st.robots.push_back(erob);
@@ -98,19 +105,33 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
     
     for (SimulationEntity &rob: st.robots) {
         //        TODO: expand tree
-//        if (rob.id == tester_id) {
-//            Vec3 target_pos = Vec3(rob.position.getX(), 0.0, -(rules.arena.depth / 2.0) + rules.arena.bottom_radius);
-//            Vec3 target_velocity = Vec3(0.0, 0.0, target_pos.getZ() - rob.position.getZ()).mul(
-//                                                                                               rules.ROBOT_MAX_GROUND_SPEED);
-//            rob.action.target_velocity_x = target_velocity.getX();
-//            rob.action.target_velocity_y = target_velocity.getY();
-//            rob.action.target_velocity_z = target_velocity.getZ();
-//            rob.action.jump_speed = 0.0;
-//            rob.action.use_nitro = false;
-//        }
+        
+        if (rob.id == goalKeeper.robotId) {
+            Vec3 target_pos = goalKeeper.anchorPoint; // goal keeper default start position
+            Vec3 target_velocity = Vec3(target_pos.getX()-rob.position.getX(), 0.0, target_pos.getZ() - rob.position.getZ()).normalized().mul(rules.ROBOT_MAX_GROUND_SPEED);
+            rob.action.target_velocity_x = target_velocity.getX();
+            rob.action.target_velocity_y = target_velocity.getY();
+            rob.action.target_velocity_z = target_velocity.getZ();
+            rob.action.jump_speed = 0.0;
+            rob.action.use_nitro = false;
+        } else {
+            // Our robots
+            for (RoleParameters rp: forwards){
+                if (rp.robotId == rob.id){
+                    Vec3 target_pos = rp.anchorPoint;
+                    Vec3 target_velocity = Vec3(target_pos.getX()-rob.position.getX(), 0.0, target_pos.getZ() - rob.position.getZ()).normalized().mul(rules.ROBOT_MAX_GROUND_SPEED);
+                    rob.action.target_velocity_x = target_velocity.getX();
+                    rob.action.target_velocity_y = target_velocity.getY();
+                    rob.action.target_velocity_z = target_velocity.getZ();
+                    rob.action.jump_speed = 0.0;
+                    rob.action.use_nitro = false;
+                }
+            }
+            
+        }
     }
     
-    if (st.current_tick > 10 + current_tick)
+    if (st.current_tick > 60 + current_tick)
         return;
     
     shared_ptr<TreeNode> node = make_shared<TreeNode>(st, parent.get());
@@ -119,6 +140,27 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
     for (int i = 0; i < rules.MICROTICKS_PER_TICK; i++) {
         update(node, micro_dt);
     }
+    
+    TreeNode* tmp = node.get();
+    //TODO::: push up
+    if (node->state.ball_collision != nullptr){
+        while (tmp->parent != NULL){
+            if (tmp->parent->state.ball_collision == nullptr
+                || tmp->parent->state.ball_collision->tick > tmp->state.ball_collision->tick){
+                std::cout<<"Ball collision detected "<<node->state.ball_collision->tick<<" checked: "<<current_tick<<std::endl;
+                tmp->parent->state.ball_collision = node->state.ball_collision;
+                tmp = tmp->parent;
+            } else {
+                break;
+            }
+        }
+    }
+
+//    Vec3 bp = node->state.ball.position;
+//    bp.setX(round( bp.getX() * 100000.0 ) / 100000.0);
+//    bp.setY(round( bp.getY() * 100000.0 ) / 100000.0);
+//    bp.setZ(round( bp.getZ() * 100000.0 ) / 100000.0);
+//    node->state.ball.setPosition(bp);
     
     for (SimulationEntity pack : node->state.nitro_packs) {
         if (pack.alive) {
@@ -144,17 +186,37 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
     //    shuffle(robots);
     
     moveRobots(node, delta_time);
-    move(node->state.ball, delta_time);
+    engine->move(node->state.ball, delta_time);
     
     for (int i = 0; i < node->state.robots.size(); i++) {
         for (int j = 0; j < i - 1; j++) {
-            collide_entities(node->state.robots[i], node->state.robots[j]);
+            if (engine->collide_entities(node->state.robots[i], node->state.robots[j])){
+                CollisionParams cpi = CollisionParams(node->state.current_tick, node->state.robots[i].position, node->state.robots[i].id);
+                CollisionParams cpj = CollisionParams(node->state.current_tick, node->state.robots[j].position, node->state.robots[j].id);
+                bool addi = true;
+                bool addj = true;
+                for (CollisionParams cp : node->state.robots_collision){
+                    if (cp.robot_id == cpi.robot_id)
+                        addi = false;
+                    if (cp.robot_id == cpj.robot_id)
+                        addj = false;
+                }
+                if (addi) node->state.robots_collision.push_back(cpi);
+                if (addj) node->state.robots_collision.push_back(cpj);
+            }
         }
     }
     
     for (SimulationEntity &robot : node->state.robots) {
-        collide_entities(robot, node->state.ball);
-        Vec3 collision_normal = collide_with_arena(robot);
+        if (engine->collide_entities(robot, node->state.ball)) {
+            std::cout<<"Update: ball collision detected"<<std::endl;
+            if(node->state.ball_collision == nullptr){
+                node->state.ball_collision = new CollisionParams(node->state.current_tick, robot.position, robot.id);
+            } else if(node->state.ball_collision->tick > current_tick){
+                node->state.ball_collision = new CollisionParams(node->state.current_tick, robot.position, robot.id);
+            }
+        }
+        Vec3 collision_normal = engine->collide_with_arena(robot);
         if (collision_normal == Vec3::None) {
             robot.touch = false;
         } else {
@@ -162,7 +224,8 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
             robot.touch_normal = collision_normal;
         }
     }
-    collide_with_arena(node->state.ball);
+    
+    engine->collide_with_arena(node->state.ball);
     
     if (abs(node->state.ball.position.getZ()) > arena.depth / 2.0 + node->state.ball.radius) {
         goal_scored();
@@ -208,329 +271,12 @@ void Simulation::moveRobots(shared_ptr<TreeNode> &node, double delta_time) {
                 robot.nitro = robot.nitro - velocity_change.len() / rules.NITRO_POINT_VELOCITY_CHANGE;
             }
         }
-        move(robot, delta_time);
+        engine->move(robot, delta_time);
         robot.radius = rules.ROBOT_MIN_RADIUS +
         (rules.ROBOT_MAX_RADIUS - rules.ROBOT_MIN_RADIUS) * robot.action.jump_speed /
         rules.ROBOT_MAX_JUMP_SPEED;
         robot.radius_change_speed = robot.action.jump_speed;
     }
-}
-
-void Simulation::move(SimulationEntity &e, double delta_time) {
-    e.velocity = clamp(e.velocity, rules.MAX_ENTITY_SPEED);
-    e.position = e.position + e.velocity * delta_time;
-    e.position.setY(e.position.getY() - rules.GRAVITY * delta_time * delta_time / 2.0);
-    e.velocity.setY(e.velocity.getY() - rules.GRAVITY * delta_time);
-}
-
-// Направление определено жестко, рандом только в скорости после удара
-void Simulation::collide_entities(SimulationEntity &a, SimulationEntity &b) {
-    Vec3 delta_position = b.position - a.position;
-    double distance = delta_position.len();
-    double penetration = a.radius + b.radius - distance;
-    if (penetration > 0.0) {
-        double k_a = (1.0 / a.mass) / ((1.0 / a.mass) + (1.0 / b.mass));
-        double k_b = (1.0 / b.mass) / ((1.0 / a.mass) + (1.0 / b.mass));
-        Vec3 normal = delta_position.normalized();
-        a.setPosition(a.position - (normal * penetration * k_a));
-        b.setPosition(b.position + (normal * penetration * k_b));
-        Vec3 velodelta = b.velocity - a.velocity;
-        double delta_velocity = dot(velodelta, normal) + b.radius_change_speed - a.radius_change_speed;
-        if (delta_velocity < 0.0) {
-            Vec3 impulse = normal * (1.0 + random(rules.MIN_HIT_E, rules.MAX_HIT_E)) * delta_velocity;
-            a.velocity = a.velocity + (impulse * k_a);
-            b.velocity = b.velocity - (impulse * k_b);
-        }
-    }
-}
-
-Vec3 Simulation::collide_with_arena(SimulationEntity &e) {
-    
-    Dan danArena = dan_to_arena(e.position);
-    double penetration = e.radius - danArena.distance;
-    if (penetration > 0.0) {
-        e.position = e.position + danArena.normal * penetration;
-        double velocity = dot(e.velocity, danArena.normal) - e.radius_change_speed;
-        if (velocity < 0.0) {
-            e.velocity = e.velocity - danArena.normal * velocity * (1.0 + e.arena_e);
-            return danArena.normal;
-        }
-    }
-    return Vec3::None;
-}
-
-Dan Simulation::dan_to_arena(Vec3 point) {
-    bool negate_x = point.getX() < 0.0;
-    bool negate_z = point.getZ() < 0.0;
-    if (negate_x) {
-        point.setX(-point.getX());
-    }
-    if (negate_z) {
-        point.setZ(-point.getZ());
-    }
-    Dan result = dan_to_arena_quarter(point);
-    if (negate_x) {
-        result.normal.setX(-result.normal.getX());
-    }
-    if (negate_z) {
-        result.normal.setZ(-result.normal.getZ());
-    }
-    return result;
-}
-
-Dan Simulation::dan_to_arena_quarter(Vec3 point) {
-    // Ground
-    Dan dan = dan_to_plane(point, Vec3(0.0, 0.0, 0.0), Vec3(0.0, 1.0, 0.0));
-
-    // Ceiling
-    dan = min(dan, dan_to_plane(point, Vec3(0.0, arena.height, 0.0), Vec3(0.0, -1.0, 0.0)));
-
-    // Side x
-    dan = min(dan, dan_to_plane(point, Vec3(arena.width / 2.0, 0.0, 0.0), Vec3(-1.0, 0.0, 0.0)));
-
-    // Side z (goal)
-    dan = min(dan, dan_to_plane(point, Vec3(0.0, 0.0, (arena.depth / 2.0) + arena.goal_depth), Vec3(0.0, 0.0, -1.0)));
-
-    // Side z
-    Vec3 v = Vec3(point.getX(), point.getY(), 0.0) -
-             (Vec3((arena.goal_width / 2.0) - arena.goal_top_radius, arena.goal_height - arena.goal_top_radius, 0.0));
-    if (point.getX() >= (arena.goal_width / 2.0) + arena.goal_side_radius
-        || point.getY() >= arena.goal_height + arena.goal_side_radius || (
-                v.getX() > 0.0
-                && v.getY() > 0.0
-                && v.len() >= arena.goal_top_radius + arena.goal_side_radius)) {
-        dan = min(dan, dan_to_plane(point, Vec3(0.0, 0.0, arena.depth / 2.0), Vec3(0.0, 0.0, -1.0)));
-    }
-
-    // Side x & ceiling (goal)
-    if (point.getZ() >= (arena.depth / 2.0) + arena.goal_side_radius) {
-        // x
-        dan = min(dan, dan_to_plane(point, Vec3(arena.goal_width / 2.0, 0.0, 0.0), Vec3(-1.0, 0.0, 0.0)));
-        // y
-        dan = min(dan, dan_to_plane(point, Vec3(0.0, arena.goal_height, 0.0), Vec3(0.0, -1.0, 0.0)));
-    }
-
-    // Goal back corners
-    //    assert arena.bottom_radius == arena.goal_top_radius
-    if (point.getZ() > (arena.depth / 2.0) + arena.goal_depth - arena.bottom_radius) {
-        dan = min(dan, dan_to_sphere_inner(point,
-                                           Vec3(clamp(point.getX(), arena.bottom_radius - (arena.goal_width / 2.0),
-                                                      (arena.goal_width / 2.0) - arena.bottom_radius),
-                                                clamp(point.getY(),
-                                                      arena.bottom_radius,
-                                                      arena.goal_height - arena.goal_top_radius),
-                                                (arena.depth / 2.0) + arena.goal_depth - arena.bottom_radius),
-                                           arena.bottom_radius));
-    }
-    // Corner
-    if (point.getX() > (arena.width / 2.0) - arena.corner_radius
-        and point.getZ() > (arena.depth / 2.0) - arena.corner_radius) {
-        dan = min(dan, dan_to_sphere_inner(
-                point,
-                Vec3(
-                        (arena.width / 2.0) - arena.corner_radius,
-                        point.getY(),
-                        (arena.depth / 2.0) - arena.corner_radius
-                ),
-                arena.corner_radius));
-    }
-    // Goal outer corner
-    if (point.getZ() < (arena.depth / 2.0) + arena.goal_side_radius) {
-        // Side x
-        if (point.getX() < (arena.goal_width / 2.0) + arena.goal_side_radius) {
-            dan = min(dan, dan_to_sphere_outer(
-                    point,
-                    Vec3(
-                            (arena.goal_width / 2.0) + arena.goal_side_radius,
-                            point.getY(),
-                            (arena.depth / 2.0) + arena.goal_side_radius
-                    ),
-                    arena.goal_side_radius));
-
-        }
-        // Ceiling
-        if (point.getY() < arena.goal_height + arena.goal_side_radius) {
-            dan = min(dan, dan_to_sphere_outer(
-                    point,
-                    Vec3(
-                            point.getX(),
-                            arena.goal_height + arena.goal_side_radius,
-                            (arena.depth / 2.0) + arena.goal_side_radius
-                    ),
-                    arena.goal_side_radius));
-        }
-        // Top corner
-        Vec3 o1 = Vec3((arena.goal_width / 2.0) - arena.goal_top_radius,
-                       arena.goal_height - arena.goal_top_radius, 0.0);
-        Vec3 v = Vec3(point.getX(), point.getY(), 0.0) - o1;
-        if (v.getX() > 0.0 && v.getY() > 0.0) {
-            Vec3 o = o1 + v.normalized() * (arena.goal_top_radius + arena.goal_side_radius);
-            dan = min(dan, dan_to_sphere_outer(
-                    point,
-                    Vec3(o.getX(), o.getY(), (arena.depth / 2.0) + arena.goal_side_radius),
-                    arena.goal_side_radius));
-
-        }
-    }
-    // Goal inside top corners
-    if (point.getZ() > (arena.depth / 2.0) + arena.goal_side_radius
-        && point.getY() > arena.goal_height - arena.goal_top_radius) {
-        // Side x
-        if (point.getX() > (arena.goal_width / 2.0) - arena.goal_top_radius) {
-            dan = min(dan, dan_to_sphere_inner(
-                    point,
-                    Vec3(
-                            (arena.goal_width / 2.0) - arena.goal_top_radius,
-                            arena.goal_height - arena.goal_top_radius,
-                            point.getZ()
-                    ),
-                    arena.goal_top_radius));
-
-        }
-        // Side z
-        if (point.getZ() > (arena.depth / 2.0) + arena.goal_depth - arena.goal_top_radius) {
-            dan = min(dan, dan_to_sphere_inner(
-                    point,
-                    Vec3(
-                            point.getX(),
-                            arena.goal_height - arena.goal_top_radius,
-                            (arena.depth / 2.0) + arena.goal_depth - arena.goal_top_radius
-                    ),
-                    arena.goal_top_radius));
-        }
-    }
-    // Bottom corners
-    if (point.getY() < arena.bottom_radius) {
-        // Side x
-        if (point.getX() > (arena.width / 2.0) - arena.bottom_radius) {
-            dan = min(dan, dan_to_sphere_inner(
-                    point,
-                    Vec3(
-                            (arena.width / 2.0) - arena.bottom_radius,
-                            arena.bottom_radius,
-                            point.getZ()
-                    ),
-                    arena.bottom_radius));
-        }
-        // Side z
-        if (point.getZ() > (arena.depth / 2.0) - arena.bottom_radius
-            and point.getX() >= (arena.goal_width / 2.0) + arena.goal_side_radius) {
-            dan = min(dan, dan_to_sphere_inner(point,
-                                               Vec3(
-                                                       point.getX(),
-                                                       arena.bottom_radius,
-                                                       (arena.depth / 2.0) - arena.bottom_radius
-                                               ),
-                                               arena.bottom_radius));
-        }
-        // Side z (goal)
-        if (point.getZ() > (arena.depth / 2.0) + arena.goal_depth - arena.bottom_radius) {
-            dan = min(dan, dan_to_sphere_inner(point,
-                                               Vec3(
-                                                       point.getX(),
-                                                       arena.bottom_radius,
-                                                       (arena.depth / 2.0) + arena.goal_depth - arena.bottom_radius
-                                               ),
-                                               arena.bottom_radius));
-        }
-        // Goal outer corner
-        Vec3 o1 = Vec3((arena.goal_width / 2.0) + arena.goal_side_radius,
-                       (arena.depth / 2.0) + arena.goal_side_radius, 0.0);
-        Vec3 v = Vec3(point.getX(), point.getZ(), 0.0) - o1;
-        if (v.getX() < 0.0 && v.getY() < 0.0 && v.len() < arena.goal_side_radius + arena.bottom_radius) {
-            Vec3 o = o1 + v.normalized() * (arena.goal_side_radius + arena.bottom_radius);
-            dan = min(dan, dan_to_sphere_inner(point,
-                                               Vec3(o.getX(), arena.bottom_radius, o.getY()),
-                                               arena.bottom_radius));
-
-        }
-        // Side x (goal)
-        if (point.getZ() >= (arena.depth / 2.0) + arena.goal_side_radius
-            and point.getX() > (arena.goal_width / 2.0) - arena.bottom_radius) {
-            dan = min(dan, dan_to_sphere_inner(point,
-                                               Vec3(
-                                                       (arena.goal_width / 2.0) - arena.bottom_radius,
-                                                       arena.bottom_radius, point.getZ()),
-                                               arena.bottom_radius));
-
-        }
-        // Corner
-        if (point.getX() > (arena.width / 2.0) - arena.corner_radius
-            and point.getZ() > (arena.depth / 2.0) - arena.corner_radius) {
-            Vec3 corner_o = Vec3((arena.width / 2.0) - arena.corner_radius,
-                                 (arena.depth / 2.0) - arena.corner_radius, 0.0);
-            Vec3 n = Vec3(point.getX(), point.getZ(), 0.0) - corner_o;
-            double dist = n.len();
-            if (dist > arena.corner_radius - arena.bottom_radius) {
-                n = n / dist;
-                Vec3 o2 = corner_o + n * (arena.corner_radius - arena.bottom_radius);
-                dan = min(dan, dan_to_sphere_inner(
-                        point,
-                        Vec3(o2.getX(), arena.bottom_radius, o2.getY()),
-                        arena.bottom_radius));
-            }
-        }
-    }
-    // Ceiling corners
-    if (point.getY() > arena.height - arena.top_radius) {
-        // Side x
-        if (point.getX() > (arena.width / 2.0) - arena.top_radius) {
-            dan = min(dan, dan_to_sphere_inner(
-                    point,
-                    Vec3(
-                            (arena.width / 2.0) - arena.top_radius,
-                            arena.height - arena.top_radius,
-                            point.getZ()
-                    ),
-                    arena.top_radius));
-
-        }
-        // Side z
-        if (point.getZ() > (arena.depth / 2.0) - arena.top_radius) {
-            dan = min(dan, dan_to_sphere_inner(
-                    point,
-                    Vec3(
-                            point.getX(),
-                            arena.height - arena.top_radius,
-                            (arena.depth / 2.0) - arena.top_radius
-                    ),
-                    arena.top_radius));
-
-        }
-
-        // Corner
-        if (point.getX() > (arena.width / 2.0) - arena.corner_radius
-            && point.getZ() > (arena.depth / 2.0) - arena.corner_radius) {
-            Vec3 corner_o = Vec3((arena.width / 2.0) - arena.corner_radius,
-                                 (arena.depth / 2.0) - arena.corner_radius, 0.0);
-            Vec3 dv = Vec3(point.getX(), point.getZ(), 0.0) - corner_o;
-            if (dv.len() > arena.corner_radius - arena.top_radius) {
-                Vec3 n = dv.normalized();
-                Vec3 o2 = corner_o + n * (arena.corner_radius - arena.top_radius);
-                dan = min(dan, dan_to_sphere_inner(
-                        point,
-                        Vec3(o2.getX(), arena.height - arena.top_radius, o2.getY()),
-                        arena.top_radius));
-            }
-        }
-    }
-    return dan;
-}
-
-Dan Simulation::dan_to_plane(Vec3 point, Vec3 point_on_plane, Vec3 plane_normal) {
-    return Dan(dot((point - point_on_plane), plane_normal), plane_normal);
-}
-
-Dan Simulation::dan_to_sphere_inner(Vec3 point, Vec3 sphere_center, double sphere_radius) {
-    return Dan(sphere_radius - (point - sphere_center).len(), (sphere_center - point).normalized());
-}
-
-Dan Simulation::dan_to_sphere_outer(Vec3 point, Vec3 sphere_center, double sphere_radius) {
-    return Dan((point - sphere_center).len() - sphere_radius, (point - sphere_center).normalized());
-}
-
-Dan Simulation::min(Dan a, Dan b) {
-    return a.distance < b.distance ? a : b;
 }
 
 void Simulation::dumpNode(shared_ptr<TreeNode> node) {
@@ -540,7 +286,7 @@ void Simulation::dumpNode(shared_ptr<TreeNode> node) {
     ss << " BALL radius:" << node->state.ball.radius;
     ss << " coord:" << node->state.ball.position.toString();
     ss << " velocity:" << node->state.ball.velocity.toString() << std::endl;
-
+    
     for (SimulationEntity r: node->state.robots) {
         ss << " ROBOT: id: " << r.id;
         ss << " player_id: " << r.player_id;
@@ -551,10 +297,92 @@ void Simulation::dumpNode(shared_ptr<TreeNode> node) {
         ss << " touch: " << r.touch;
         ss << " touch_normal: " << r.touch_normal.toString()<< std::endl << std::endl;
     }
-
+    
     writeLog(ss);
     std::stringstream().swap(ss);
 #endif
+}
+
+/*y    double    4.6388979218969197   [1]    double    4.6388979218969197*/
+
+void Simulation::setTick(const Game& g){
+    current_tick = g.current_tick;
+    if (baseNode->state.current_tick != current_tick){
+        for (shared_ptr<TreeNode> tn: baseNode->children){
+            if (tn->state.current_tick == current_tick && tn->state.ball.position == Vec3(g.ball.x, g.ball.y, g.ball.z)){
+                adjustRobotsPositions(g.robots);
+                truncTree(tn);
+                simulateNextSteps(baseNode);
+                return;
+            }
+        }
+        std::cout<< "Simulation wrong: "<< current_tick << std::endl;
+        
+        baseNode->children.clear();
+        baseNode->state.ball.setPosition(g.ball.x, g.ball.y, g.ball.z);
+        baseNode->state.ball.setVelocity(g.ball.velocity_x, g.ball.velocity_y, g.ball.velocity_z);
+        baseNode->state.current_tick = g.current_tick;
+        
+        for (Robot rob: g.robots) {
+            SimulationEntity erob;
+            erob.id = rob.id;
+            erob.player_id = rob.player_id;
+            erob.setPosition(rob.x, rob.y, rob.z);
+            erob.setVelocity(rob.velocity_x, rob.velocity_y, rob.velocity_z);
+            erob.setNormal(rob.touch_normal_x, rob.touch_normal_y, rob.touch_normal_z);
+            erob.touch = rob.touch;
+            
+            if (rob.id == goalKeeper.robotId) {
+                Vec3 target_pos = goalKeeper.anchorPoint; // goal keeper default start position
+                Vec3 target_velocity = Vec3(target_pos.getX()-rob.x, 0.0, target_pos.getZ() - rob.z).normalized().mul(rules.ROBOT_MAX_GROUND_SPEED);
+                erob.action.target_velocity_x = target_velocity.getX();
+                erob.action.target_velocity_y = target_velocity.getY();
+                erob.action.target_velocity_z = target_velocity.getZ();
+                erob.action.jump_speed = 0.0;
+                erob.action.use_nitro = false;
+            } else {
+                // Our robots
+                for (RoleParameters rp: forwards){
+                    if (rp.robotId == rob.id){
+                        Vec3 target_pos = rp.anchorPoint;
+                        Vec3 target_velocity = Vec3(target_pos.getX()-rob.x, 0.0, target_pos.getZ() - rob.z).normalized().mul(rules.ROBOT_MAX_GROUND_SPEED);
+                        erob.action.target_velocity_x = target_velocity.getX();
+                        erob.action.target_velocity_y = target_velocity.getY();
+                        erob.action.target_velocity_z = target_velocity.getZ();
+                        erob.action.jump_speed = 0.0;
+                        erob.action.use_nitro = false;
+                    }
+                }
+            }
+            ////sdjflsdjhfgklsjklfjskl
+            baseNode->state.robots.push_back(erob);
+        }
+        tick(baseNode);
+        /// TODO:if sim failed ???
+    }
+    
+}
+
+void Simulation::adjustRobotsPositions(const vector<Robot>& rs){
+    
+}
+
+void Simulation::truncTree(shared_ptr<TreeNode> tn){
+    shared_ptr<TreeNode> old;
+    baseNode.swap(old);
+    tn.swap(baseNode);
+}
+
+void Simulation::simulateNextSteps(shared_ptr<TreeNode> base){
+    
+    if (base->children.empty()){
+        tick(base);
+        return;
+    }
+    
+    for (shared_ptr<TreeNode> tn : base->children){
+        simulateNextSteps(tn);
+    }
 }
 
 
