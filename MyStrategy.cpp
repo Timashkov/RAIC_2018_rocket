@@ -24,7 +24,7 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
                 k = r.id;
         }
         goalKeeper.robotId = k;
-        goalKeeper.anchorPoint = Vec3(0.0, 0.0, -(rules.arena.depth * 2.0 / 5.0));
+        goalKeeper.anchorPoint = Vec3(0.0, 0.0, -(rules.arena.depth / 3.0));
 
         for (Robot rr: game.robots) {
             if (rr.id != goalKeeper.robotId && rr.is_teammate) {
@@ -107,7 +107,7 @@ void MyStrategy::actAsForward(const Robot &me, const Rules &rules, const Game &g
     // ударив по мячу сильнее в сторону противника
 
     for (SimulationEntity &se : sim.getBaseNode()->state.robots) {
-        if (se.id == me.id){
+        if (se.id == me.id) {
             action = se.action;
             return;
         }
