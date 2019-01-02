@@ -146,8 +146,6 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
         update(node, micro_dt);
     }
 
-    calculateNodeBounty(node);
-
     for (SimulationEntity pack : node->state.nitro_packs) {
         if (pack.alive) {
             continue;
@@ -159,6 +157,10 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
 
     processingNodes.push(node);
     dumpNode(node);
+
+    calculateNodeBounty(node);
+
+    checkForAlternativeNodes(node, parent);
 
     if (!processingNodes.empty()) {
         shared_ptr<TreeNode> tn = processingNodes.front();
@@ -239,10 +241,21 @@ void Simulation::calculateNodeBounty(shared_ptr<TreeNode> node) {
     TreeNode *tmp = node.get();
     //TODO::: calc collision bounty
     if (!node->state.ball_collision.empty()) {
-        while (tmp->parent != NULL ) {
-            tmp->parent->state.bounty += node->state.bounty;
-            tmp = tmp->parent;
+        for (const CollisionParams &cp: node->state.ball_collision) {
+            if (isBallDirectionToGoal(cp.anyEntity, true)) {
+                node->state.bounty += -10;
+            } else if (isBallDirectionToGoal(cp.anyEntity, false)) {
+                node->state.bounty += 10;
+            } else if (cp.anyEntity.velocity.getZ() < 0) {
+                node->state.bounty += -5;
+            } else {
+                node->state.bounty += 1;
+            }
         }
+    }
+    while (tmp->parent != NULL) {
+        tmp->parent->state.bounty += node->state.bounty;
+        tmp = tmp->parent;
     }
 }
 
@@ -350,4 +363,50 @@ void Simulation::simulateNextSteps(shared_ptr<TreeNode> base) {
     for (const shared_ptr<TreeNode> &tn : base->children) {
         simulateNextSteps(tn);
     }
+}
+
+bool Simulation::isBallDirectionToGoal(const SimulationEntity &ball, bool myGoal) {
+    if (myGoal && ball.velocity.getZ() < 0) {
+        Vec3 goal_left_side_vector = Vec3(
+                -rules.arena.goal_width / 2.0 - ball.position.getX(),
+                0.0,
+                -rules.arena.depth / 2.0 - rules.BALL_RADIUS -
+                ball.position.getZ()).normalized();
+        Vec3 goal_right_side_vector = Vec3(
+                rules.arena.goal_width / 2.0 - ball.position.getX(),
+                0.0,
+                -rules.arena.depth / 2.0 - rules.BALL_RADIUS -
+                ball.position.getZ()).normalized();
+
+        Vec3 horizontal_velocity = Vec3(ball.velocity.getX(), 0.0, ball.velocity.getZ()).normalized();
+        double left_angle = atan(goal_left_side_vector.getX() / goal_left_side_vector.getZ());
+        double right_angle = atan(goal_right_side_vector.getX() / goal_right_side_vector.getZ());
+        double direct_angle = atan(horizontal_velocity.getX() / horizontal_velocity.getZ());
+
+        return left_angle <= direct_angle && right_angle >= direct_angle;
+
+    } else if (!myGoal && ball.velocity.getZ() > 0) {
+        Vec3 goal_left_side_vector = Vec3(
+                -rules.arena.goal_width / 2.0 - rules.arena.goal_top_radius - ball.position.getX(),
+                0.0,
+                -rules.arena.depth / 2.0 -
+                ball.position.getZ()).normalized();
+        Vec3 goal_right_side_vector = Vec3(
+                rules.arena.goal_width / 2.0 - rules.arena.goal_top_radius - ball.position.getX(),
+                0.0,
+                -rules.arena.depth / 2.0 -
+                ball.position.getZ()).normalized();
+
+        Vec3 horizontal_velocity = Vec3(ball.velocity.getX(), 0.0, ball.velocity.getZ()).normalized();
+        double left_angle = atan(goal_left_side_vector.getX() / goal_left_side_vector.getZ());
+        double right_angle = atan(goal_right_side_vector.getX() / goal_right_side_vector.getZ());
+        double direct_angle = atan(horizontal_velocity.getX() / horizontal_velocity.getZ());
+
+        return left_angle <= direct_angle && right_angle >= direct_angle;
+    }
+    return false;
+}
+
+void Simulation::checkForAlternativeNodes(const shared_ptr<TreeNode>& examineNode, const shared_ptr<TreeNode>& parent) {
+
 }

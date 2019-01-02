@@ -126,6 +126,10 @@ public:
     inline TreeNode *getBaseNode() const { return baseNode.get(); };
 
     void calculateNodeBounty(shared_ptr<TreeNode> shared_ptr);
+
+    bool isBallDirectionToGoal(const SimulationEntity& ball, bool myGoal);
+
+    void checkForAlternativeNodes(const shared_ptr<TreeNode>& examineNode, const shared_ptr<TreeNode>& parent);
 };
 
 #endif /* Simulation_h */
