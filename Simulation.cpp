@@ -43,8 +43,7 @@ void Simulation::init(const Game &g, const Rules &rul, const RoleParameters &goa
 
         if (rob.id == goalKeeper.robotId) {
             Vec3 target_pos = goalKeeper.anchorPoint; // goal keeper default start position
-            Vec3 target_velocity = Vec3(target_pos.getX() - rob.x, 0.0, target_pos.getZ() - rob.z).normalized().mul(
-                    rules.ROBOT_MAX_GROUND_SPEED);
+            Vec3 target_velocity = Vec3(target_pos.getX() - rob.x, 0.0, target_pos.getZ() - rob.z);
             erob.action.target_velocity_x = target_velocity.getX();
             erob.action.target_velocity_y = target_velocity.getY();
             erob.action.target_velocity_z = target_velocity.getZ();
@@ -57,8 +56,7 @@ void Simulation::init(const Game &g, const Rules &rul, const RoleParameters &goa
                 if (rp.robotId == rob.id) {
                     Vec3 target_pos = rp.anchorPoint;
                     Vec3 target_velocity = Vec3(target_pos.getX() - rob.x, 0.0,
-                                                target_pos.getZ() - rob.z).normalized().mul(
-                            rules.ROBOT_MAX_GROUND_SPEED);
+                                                target_pos.getZ() - rob.z);
                     erob.action.target_velocity_x = target_velocity.getX();
                     erob.action.target_velocity_y = target_velocity.getY();
                     erob.action.target_velocity_z = target_velocity.getZ();
@@ -115,8 +113,7 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
         if (rob.id == goalKeeper.robotId) {
             Vec3 target_pos = goalKeeper.anchorPoint; // goal keeper default start position
             Vec3 target_velocity = Vec3(target_pos.getX() - rob.position.getX(), 0.0,
-                                        target_pos.getZ() - rob.position.getZ()).normalized().mul(
-                    rules.ROBOT_MAX_GROUND_SPEED);
+                                        target_pos.getZ() - rob.position.getZ());
             rob.action.target_velocity_x = target_velocity.getX();
             rob.action.target_velocity_y = target_velocity.getY();
             rob.action.target_velocity_z = target_velocity.getZ();
@@ -128,8 +125,7 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
                 if (rp.robotId == rob.id) {
                     Vec3 target_pos = rp.anchorPoint;
                     Vec3 target_velocity = Vec3(target_pos.getX() - rob.position.getX(), 0.0,
-                                                target_pos.getZ() - rob.position.getZ()).normalized().mul(
-                            rules.ROBOT_MAX_GROUND_SPEED);
+                                                target_pos.getZ() - rob.position.getZ());
                     rob.action.target_velocity_x = target_velocity.getX();
                     rob.action.target_velocity_y = target_velocity.getY();
                     rob.action.target_velocity_z = target_velocity.getZ();
@@ -137,7 +133,6 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
                     rob.action.use_nitro = false;
                 }
             }
-
         }
     }
 
@@ -201,7 +196,7 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
             CollisionParams cpi = CollisionParams(node->state.current_tick, node->state.ball, robot);
             for (const CollisionParams &cp: node->state.ball_collision) {
 
-                if (cp.anyEntity.id == cpi.anyEntity.id && cp.robot.id == cpi.robot.id && cp.tick == node->state.current_tick) {
+                if (cp.anyEntity == cpi.anyEntity && cp.robot == cpi.robot && cp.tick == node->state.current_tick) {
                     found = true;
                     break;
                 }
@@ -305,8 +300,7 @@ void Simulation::setTick(const Game &g) {
 
             if (rob.id == goalKeeper.robotId) {
                 Vec3 target_pos = goalKeeper.anchorPoint; // goal keeper default start position
-                Vec3 target_velocity = Vec3(target_pos.getX() - rob.x, 0.0, target_pos.getZ() - rob.z).normalized().mul(
-                        rules.ROBOT_MAX_GROUND_SPEED);
+                Vec3 target_velocity = Vec3(target_pos.getX() - rob.x, 0.0, target_pos.getZ() - rob.z);
                 erob.action.target_velocity_x = target_velocity.getX();
                 erob.action.target_velocity_y = target_velocity.getY();
                 erob.action.target_velocity_z = target_velocity.getZ();
@@ -318,8 +312,7 @@ void Simulation::setTick(const Game &g) {
                     if (rp.robotId == rob.id) {
                         Vec3 target_pos = rp.anchorPoint;
                         Vec3 target_velocity = Vec3(target_pos.getX() - rob.x, 0.0,
-                                                    target_pos.getZ() - rob.z).normalized().mul(
-                                rules.ROBOT_MAX_GROUND_SPEED);
+                                                    target_pos.getZ() - rob.z);
                         erob.action.target_velocity_x = target_velocity.getX();
                         erob.action.target_velocity_y = target_velocity.getY();
                         erob.action.target_velocity_z = target_velocity.getZ();
