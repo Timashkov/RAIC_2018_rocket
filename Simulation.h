@@ -37,10 +37,6 @@ public:
     SimulationEntity anyEntity;
     SimulationEntity robot;
 
-    friend bool operator==(const SimulationEntity &lhs, const SimulationEntity &rhs) {
-        return lhs.id == rhs.id && lhs.position == rhs.position && lhs.velocity == rhs.velocity;
-    }
-
 };
 
 class State {
@@ -111,13 +107,13 @@ public:
 
     void tick(shared_ptr<TreeNode> node);
 
-    void update(shared_ptr<TreeNode> &node, double delta_time);
-
-    inline void goal_scored() {};
-
     inline bool isInited() const { return inited; };
 
     void setTick(const Game &g);
+
+    void update(shared_ptr<TreeNode> &node, double delta_time);
+
+    inline void goal_scored() {};
 
     void dumpNode(shared_ptr<TreeNode> node);
 
