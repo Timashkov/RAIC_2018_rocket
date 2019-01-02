@@ -40,7 +40,7 @@ bool SimulationEngine::collide_entities(SimulationEntity &a, SimulationEntity &b
 }
 
 Vec3 SimulationEngine::collide_with_arena(SimulationEntity &e) {
-    
+
     Dan danArena = dan_to_arena(e.position);
     double penetration = e.radius - danArena.distance;
     if (penetration > 0.0) {
@@ -109,16 +109,16 @@ Dan SimulationEngine::dan_to_arena(Vec3 point) {
 Dan SimulationEngine::dan_to_arena_quarter(Vec3 point) {
     // Ground
     Dan dan = dan_to_plane(point, Vec3(0.0, 0.0, 0.0), Vec3(0.0, 1.0, 0.0));
-    
+
     // Ceiling
     dan = min(dan, dan_to_plane(point, Vec3(0.0, rules.arena.height, 0.0), Vec3(0.0, -1.0, 0.0)));
-    
+
     // Side x
     dan = min(dan, dan_to_plane(point, Vec3(rules.arena.width / 2.0, 0.0, 0.0), Vec3(-1.0, 0.0, 0.0)));
-    
+
     // Side z (goal)
     dan = min(dan, dan_to_plane(point, Vec3(0.0, 0.0, (rules.arena.depth / 2.0) + rules.arena.goal_depth), Vec3(0.0, 0.0, -1.0)));
-    
+
     // Side z
     Vec3 v = Vec3(point.getX(), point.getY(), 0.0) -
     (Vec3((rules.arena.goal_width / 2.0) - rules.arena.goal_top_radius, rules.arena.goal_height - rules.arena.goal_top_radius, 0.0));
@@ -129,7 +129,7 @@ Dan SimulationEngine::dan_to_arena_quarter(Vec3 point) {
                                                                           && v.len() >= rules.arena.goal_top_radius + rules.arena.goal_side_radius)) {
             dan = min(dan, dan_to_plane(point, Vec3(0.0, 0.0, rules.arena.depth / 2.0), Vec3(0.0, 0.0, -1.0)));
         }
-    
+
     // Side x & ceiling (goal)
     if (point.getZ() >= (rules.arena.depth / 2.0) + rules.arena.goal_side_radius) {
         // x
@@ -137,7 +137,7 @@ Dan SimulationEngine::dan_to_arena_quarter(Vec3 point) {
         // y
         dan = min(dan, dan_to_plane(point, Vec3(0.0, rules.arena.goal_height, 0.0), Vec3(0.0, -1.0, 0.0)));
     }
-    
+
     // Goal back corners
     //    assert arena.bottom_radius == arena.goal_top_radius
     if (point.getZ() > (rules.arena.depth / 2.0) + rules.arena.goal_depth - rules.arena.bottom_radius) {
@@ -174,7 +174,7 @@ Dan SimulationEngine::dan_to_arena_quarter(Vec3 point) {
                                                     (rules.arena.depth / 2.0) + rules.arena.goal_side_radius
                                                     ),
                                                rules.arena.goal_side_radius));
-            
+
         }
         // Ceiling
         if (point.getY() < rules.arena.goal_height + rules.arena.goal_side_radius) {
@@ -197,7 +197,7 @@ Dan SimulationEngine::dan_to_arena_quarter(Vec3 point) {
                                                point,
                                                Vec3(o.getX(), o.getY(), (rules.arena.depth / 2.0) + rules.arena.goal_side_radius),
                                                rules.arena.goal_side_radius));
-            
+
         }
     }
     // Goal inside top corners
@@ -213,7 +213,7 @@ Dan SimulationEngine::dan_to_arena_quarter(Vec3 point) {
                                                     point.getZ()
                                                     ),
                                                rules.arena.goal_top_radius));
-            
+
         }
         // Side z
         if (point.getZ() > (rules.arena.depth / 2.0) + rules.arena.goal_depth - rules.arena.goal_top_radius) {
@@ -270,7 +270,7 @@ Dan SimulationEngine::dan_to_arena_quarter(Vec3 point) {
             dan = min(dan, dan_to_sphere_inner(point,
                                                Vec3(o.getX(), rules.arena.bottom_radius, o.getY()),
                                                rules.arena.bottom_radius));
-            
+
         }
         // Side x (goal)
         if (point.getZ() >= (rules.arena.depth / 2.0) + rules.arena.goal_side_radius
@@ -280,7 +280,7 @@ Dan SimulationEngine::dan_to_arena_quarter(Vec3 point) {
                                                     (rules.arena.goal_width / 2.0) - rules.arena.bottom_radius,
                                                     rules.arena.bottom_radius, point.getZ()),
                                                rules.arena.bottom_radius));
-            
+
         }
         // Corner
         if (point.getX() > (rules.arena.width / 2.0) - rules.arena.corner_radius
@@ -311,7 +311,7 @@ Dan SimulationEngine::dan_to_arena_quarter(Vec3 point) {
                                                     point.getZ()
                                                     ),
                                                rules.arena.top_radius));
-            
+
         }
         // Side z
         if (point.getZ() > (rules.arena.depth / 2.0) - rules.arena.top_radius) {
@@ -323,9 +323,9 @@ Dan SimulationEngine::dan_to_arena_quarter(Vec3 point) {
                                                     (rules.arena.depth / 2.0) - rules.arena.top_radius
                                                     ),
                                                rules.arena.top_radius));
-            
+
         }
-        
+
         // Corner
         if (point.getX() > (rules.arena.width / 2.0) - rules.arena.corner_radius
             && point.getZ() > (rules.arena.depth / 2.0) - rules.arena.corner_radius) {
