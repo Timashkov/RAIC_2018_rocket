@@ -11,8 +11,8 @@
 class SimulationEntity {
 public:
     SimulationEntity() : position(0, 0, 0), velocity(0, 0, 0), touch_normal(Vec3::None),
-               radius(0), mass(0), radius_change_speed(0),
-               touch(false), nitro(0), alive(false), respawn_ticks(0), arena_e(0.0) {}
+                         radius(0), mass(0), radius_change_speed(0),
+                         touch(false), nitro(0), alive(false), respawn_ticks(0), arena_e(0.0) {}
 
     ~SimulationEntity() {}
 
@@ -67,6 +67,10 @@ public:
         touch_normal.setX(x);
         touch_normal.setY(y);
         touch_normal.setZ(z);
+    }
+
+    friend bool operator==(const SimulationEntity &lhs, const SimulationEntity &rhs) {
+        return lhs.id == rhs.id && lhs.position == rhs.position && lhs.velocity == rhs.velocity;
     }
 };
 
