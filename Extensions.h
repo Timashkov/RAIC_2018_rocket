@@ -13,7 +13,7 @@
 #include <cmath>
 #include <numeric>
 #include <vector>
-#include "cvl_vec3.h"
+#include "utils.h"
 #include "model/Ball.h"
 
 using namespace std;

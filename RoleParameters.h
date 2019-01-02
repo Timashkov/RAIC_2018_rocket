@@ -5,12 +5,15 @@
 #ifndef MYSTRATEGY_ROLEPARAMETERS_H
 #define MYSTRATEGY_ROLEPARAMETERS_H
 
-#include "cvl_vec3.h"
+#include "utils.h"
 
 class RoleParameters {
 public:
-    RoleParameters(): anchorPoint(Vec3::None), robotId(-1) {}
-    ~RoleParameters(){}
+    RoleParameters() :
+            anchorPoint(Vec3::None),
+            robotId(-1) {}
+
+    ~RoleParameters() {}
 
     Vec3 anchorPoint;
     int robotId;

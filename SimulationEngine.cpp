@@ -54,6 +54,39 @@ Vec3 SimulationEngine::collide_with_arena(SimulationEntity &e) {
     return Vec3::None;
 }
 
+void SimulationEngine::moveRobots(vector<SimulationEntity>& robots, double delta_time) {
+    for (SimulationEntity &robot : robots) {
+        Vec3 action_target_velocity = Vec3(robot.action.target_velocity_x, robot.action.target_velocity_y,
+                                           robot.action.target_velocity_z);
+        if (robot.touch) {
+            Vec3 target_velocity = clamp(action_target_velocity, rules.ROBOT_MAX_GROUND_SPEED);
+            target_velocity = target_velocity - (robot.touch_normal * dot(robot.touch_normal, target_velocity));
+            Vec3 target_velocity_change = target_velocity - robot.velocity;
+            if (target_velocity_change.len() > 0.0) {
+                double acceleration = rules.ROBOT_ACCELERATION * max(0.0, robot.touch_normal.getY());
+                robot.velocity = robot.velocity + clamp(target_velocity_change.normalized() * acceleration * delta_time,
+                                                        target_velocity_change.len());
+            }
+        }
+
+        if (robot.action.use_nitro) {
+            Vec3 target_velocity_change = clamp(action_target_velocity - robot.velocity,
+                                                robot.nitro * rules.NITRO_POINT_VELOCITY_CHANGE);
+            if (target_velocity_change.len() > 0.0) {
+                Vec3 acceleration = target_velocity_change.normalized() * rules.ROBOT_NITRO_ACCELERATION;
+                Vec3 velocity_change = clamp(acceleration * delta_time, target_velocity_change.len());
+                robot.velocity = robot.velocity + velocity_change;
+                robot.nitro = robot.nitro - velocity_change.len() / rules.NITRO_POINT_VELOCITY_CHANGE;
+            }
+        }
+        move(robot, delta_time);
+        robot.radius = rules.ROBOT_MIN_RADIUS +
+                       (rules.ROBOT_MAX_RADIUS - rules.ROBOT_MIN_RADIUS) * robot.action.jump_speed /
+                       rules.ROBOT_MAX_JUMP_SPEED;
+        robot.radius_change_speed = robot.action.jump_speed;
+    }
+}
+
 Dan SimulationEngine::dan_to_arena(Vec3 point) {
     bool negate_x = point.getX() < 0.0;
     bool negate_z = point.getZ() < 0.0;

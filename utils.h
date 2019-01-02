@@ -1,20 +1,32 @@
 //
-//  cvl_vec3.hpp
+//  CVL_Utils.h
 //  raic
 //
-//  Created by Alex on 24/12/2018.
+//  Created by Alex on 18/12/2018.
 //  Copyright © 2018 Alex. All rights reserved.
 //
 
-#ifndef cvl_vec3_h
-#define cvl_vec3_h
+#ifndef CVL_Utils_h
+#define CVL_Utils_h
+#ifdef LOCAL_RUN
+
+#include <iostream>
+#include <sstream>
+
+#endif
 
 #include <cmath>
 #include <numeric>
 #include <vector>
 #include <string>
 
+const double NEVER_COLLISION = 1000000;
+const double PRECISION = 0.000001;
+const double EPS = 1e-5;
+
 using namespace std;
+
+bool isEqual(double a, double b);
 
 class Vec3 {
 private:
@@ -107,7 +119,9 @@ public:
     }
 
     friend bool operator==(const Vec3 &lhs, const Vec3 &rhs) {
-        return lhs.getX() == rhs.getX() && lhs.getY() == rhs.getY() && lhs.getZ() == rhs.getZ();
+        return isEqual(lhs.getX(), rhs.getX())
+               && isEqual(lhs.getY(), rhs.getY())
+               && isEqual(lhs.getZ(), rhs.getZ());
     }
 
     friend bool operator!=(const Vec3 &lhs, const Vec3 &rhs) {
@@ -116,7 +130,7 @@ public:
 
     static Vec3 None;
 
-    std::string toString() {
+    std::string toString() const {
         string s = "(" + to_string(vec[0]) + ";" + to_string(vec[1]) + ";" + to_string(vec[2]) + ")";
         return s;
     }
@@ -138,4 +152,8 @@ double clamp(double target, double lb, double ub);
 
 double dot(Vec3 a, Vec3 b);
 
-#endif /* cvl_vec3_h */
+void writeLog(const std::stringstream &ss);
+
+void closeLog();
+
+#endif /* CVL_Utils_h */

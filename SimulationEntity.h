@@ -5,7 +5,7 @@
 #ifndef MYSTRATEGY_SIMULATIONENTITY_H
 #define MYSTRATEGY_SIMULATIONENTITY_H
 
-#include "cvl_vec3.h"
+#include "utils.h"
 #include "model/Action.h"
 
 class SimulationEntity {
