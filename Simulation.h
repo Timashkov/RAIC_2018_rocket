@@ -92,9 +92,6 @@ private:
     int goalKeeperId;
     Vec3 defaultGoalKeeperPosition;
 
-//    RoleParameters goalKeeper;
-//    vector<RoleParameters> forwards;
-
     shared_ptr<TreeNode> baseNode;
     queue<shared_ptr<TreeNode>> processingNodes;
 
@@ -112,8 +109,6 @@ public:
 
     void
     init(const Game &g, const Rules &rul, const RoleParameters &goalKeeper, const vector<RoleParameters> &forwards);
-
-    void start();
 
     void tick(shared_ptr<TreeNode> parent);
 

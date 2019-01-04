@@ -59,6 +59,7 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
 
     for (SimulationEntity &se : sim.getBaseNode()->state.robots) {
         if (se.id == me.id) {
+            cout<< "move robot "<< me.id << "  on tick "<< sim.getBaseNode()->state.current_tick << endl;
             action = se.action;
             return;
         }

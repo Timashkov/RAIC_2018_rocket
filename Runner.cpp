@@ -136,7 +136,7 @@ void testRun(){
     vector<RoleParameters> forwards;
     
     sim.init(*game, *rules, gk, forwards);
-    sim.start();
+//    sim.start();
 }
 
 void testRun2(){

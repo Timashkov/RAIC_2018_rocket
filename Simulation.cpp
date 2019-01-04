@@ -60,27 +60,6 @@ void Simulation::setInitialState(const Game &g, State &st) {
     }
 }
 
-
-void Simulation::start() {
-
-    tick(baseNode);
-
-//    int bnt = baseNode->state.bounty;
-//    if (bnt < 10) {
-//        for (const CollisionParams &cp : baseNode->state.ball_collision) {
-//            if (cp.robot.id == goalKeeperId) {
-//                analyzeForGoalKeeper(cp, gkRp);
-//            } else {
-//                for (RoleParameters &rp: frwdRp) {
-//                    if (rp.robotId == cp.robot.id) {
-//                        RoleParameters resRp = analyzeForForward(cp, rp);
-//                    }
-//                }
-//            }
-//        }
-//    }
-}
-
 void Simulation::setTick(const Game &g) {
     current_tick = g.current_tick;
     if (baseNode->state.current_tick != current_tick) {
@@ -152,6 +131,7 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
 
         if (rob.teammate) {
             Vec3 target_pos = resolveTargetPosition(rob);
+            cout<< "Get target position for tick "<< st.current_tick << "  "<<target_pos.toString()<<endl;
             Vec3 target_velocity = target_pos - rob.position;
             rob.action.target_velocity_x = target_velocity.getX();
             rob.action.target_velocity_y = target_velocity.getY();
@@ -282,15 +262,19 @@ void Simulation::calculateNodeBounty(shared_ptr<TreeNode> node) {
 
     while (tmp->parent != NULL) {
         tmp->parent->state.bounty += tmp->state.bounty;
-        for (CollisionParams cp: tmp->state.ball_collision) {
-            bool shouldAdd = true;
-            for (const CollisionParams &pcp: tmp->parent->state.ball_collision) {
-                if (pcp == cp)
-                    shouldAdd = false;
+        if (!tmp->state.ball_collision.empty()){
+            for (CollisionParams cp: tmp->state.ball_collision) {
+                bool shouldAdd = true;
+                if (!tmp->parent->state.ball_collision.empty()){
+                    for (const CollisionParams &pcp: tmp->parent->state.ball_collision) {
+                        if (pcp == cp)
+                            shouldAdd = false;
+                    }
+                }
+                if (shouldAdd)
+                    tmp->parent->state.ball_collision.push_back(cp);
             }
-
-            if (shouldAdd)
-                tmp->parent->state.ball_collision.push_back(cp);
+            
         }
         tmp = tmp->parent;
     }
@@ -328,6 +312,7 @@ void Simulation::truncTree(shared_ptr<TreeNode> tn) {
     shared_ptr<TreeNode> old;
     baseNode.swap(old);
     tn.swap(baseNode);
+    baseNode->parent = NULL;
 }
 
 void Simulation::simulateNextSteps(shared_ptr<TreeNode> base) {
