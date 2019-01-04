@@ -16,18 +16,28 @@ void Simulation::init(const Game &g, const Rules &rul, const RoleParameters &goa
     rules = rul;
     std::srand(rul.seed);
 
-    State st;
-    st.ball.setPosition(g.ball.x, g.ball.y, g.ball.z);
-    st.ball.radius = g.ball.radius;
-    st.ball.mass = rul.BALL_MASS;
-    st.ball.arena_e = rules.BALL_ARENA_E;
-    st.current_tick = 0;
+    this->goalKeeperId = goalKeeper.robotId;
+    this->defaultGoalKeeperPosition = goalKeeper.anchorPoint;
+//    this->forwards = forwards;
 
     arena = rul.arena;
     engine = std::unique_ptr<SimulationEngine>(new SimulationEngine(rul));
 
-    this->goalKeeper = goalKeeper;
-    this->forwards = forwards;
+    State st;
+    setInitialState(g, st);
+    baseNode = std::make_shared<TreeNode>(st, nullptr);
+
+    dumpNode(baseNode);
+    inited = true;
+}
+
+void Simulation::setInitialState(const Game &g, State &st) {
+
+    st.ball.setPosition(g.ball.x, g.ball.y, g.ball.z);
+    st.ball.radius = g.ball.radius;
+    st.ball.mass = rules.BALL_MASS;
+    st.ball.arena_e = rules.BALL_ARENA_E;
+    st.current_tick = 0;
 
     for (Robot rob: g.robots) {
         SimulationEntity erob;
@@ -37,68 +47,100 @@ void Simulation::init(const Game &g, const Rules &rul, const RoleParameters &goa
         erob.setVelocity(rob.velocity_x, rob.velocity_y, rob.velocity_z);
         erob.setNormal(rob.touch_normal_x, rob.touch_normal_y, rob.touch_normal_z);
         erob.touch = rob.touch;
-        erob.mass = rul.ROBOT_MASS;
-        erob.radius = rul.ROBOT_RADIUS;
-        erob.arena_e = rul.ROBOT_ARENA_E;
+        erob.mass = rules.ROBOT_MASS;
+        erob.radius = rules.ROBOT_RADIUS;
+        erob.arena_e = rules.ROBOT_ARENA_E;
 
-        if (rob.id == goalKeeper.robotId) {
-            Vec3 target_pos = goalKeeper.anchorPoint; // goal keeper default start position
-            Vec3 target_velocity = Vec3(target_pos.getX() - rob.x, 0.0, target_pos.getZ() - rob.z);
-            erob.action.target_velocity_x = target_velocity.getX();
-            erob.action.target_velocity_y = target_velocity.getY();
-            erob.action.target_velocity_z = target_velocity.getZ();
-            //splitpoint
-            erob.action.jump_speed = 0.0;
-            erob.action.use_nitro = false;
-        } else {
-            // Our robots
-            for (RoleParameters rp: forwards) {
-                if (rp.robotId == rob.id) {
-                    Vec3 target_pos = rp.anchorPoint;
-                    Vec3 target_velocity = Vec3(target_pos.getX() - rob.x, 0.0,
-                                                target_pos.getZ() - rob.z);
-                    erob.action.target_velocity_x = target_velocity.getX();
-                    erob.action.target_velocity_y = target_velocity.getY();
-                    erob.action.target_velocity_z = target_velocity.getZ();
-                    //splitpoint
-                    erob.action.jump_speed = 0.0;
-                    erob.action.use_nitro = false;
-                }
-            }
-
-        }
-
+        erob.action.target_velocity_x = rob.velocity_x;
+        erob.action.target_velocity_y = rob.velocity_y;
+        erob.action.target_velocity_z = rob.velocity_z;
+        erob.action.jump_speed = 0;
+        erob.action.use_nitro = false;
         st.robots.push_back(erob);
     }
-
-    baseNode = std::make_shared<TreeNode>(st, nullptr);
-
-    dumpNode(baseNode);
-    inited = true;
 }
 
+
 void Simulation::start() {
-#ifdef LOCAL_RUN
-    std::stringstream ss;
-    double delta_time = 1.0 / rules.TICKS_PER_SECOND;
-    double micro_dt = delta_time / rules.MICROTICKS_PER_TICK;
-
-    ss << " delta time 1/" << rules.TICKS_PER_SECOND << "=" << 1.0 / rules.TICKS_PER_SECOND << endl;
-    ss << " update dt = time/" << rules.MICROTICKS_PER_TICK << "= " << micro_dt << endl;
-    ss << " Rules gravity = " << rules.GRAVITY << endl;
-
-    writeLog(ss);
-    std::stringstream().swap(ss);
-#endif
 
     tick(baseNode);
 
-#ifdef LOCAL_RUN
-    ss << " Simulation done " << endl;
-    writeLog(ss);
-    std::stringstream().swap(ss);
-#endif
+//    int bnt = baseNode->state.bounty;
+//    if (bnt < 10) {
+//        for (const CollisionParams &cp : baseNode->state.ball_collision) {
+//            if (cp.robot.id == goalKeeperId) {
+//                analyzeForGoalKeeper(cp, gkRp);
+//            } else {
+//                for (RoleParameters &rp: frwdRp) {
+//                    if (rp.robotId == cp.robot.id) {
+//                        RoleParameters resRp = analyzeForForward(cp, rp);
+//                    }
+//                }
+//            }
+//        }
+//    }
 }
+
+void Simulation::setTick(const Game &g) {
+    current_tick = g.current_tick;
+    if (baseNode->state.current_tick != current_tick) {
+        for (const shared_ptr<TreeNode> &tn: baseNode->children) {
+            if (tn->state.current_tick == current_tick &&
+                tn->state.ball.position == Vec3(g.ball.x, g.ball.y, g.ball.z)) {
+                adjustRobotsPositions(g.robots);
+                truncTree(tn);
+                simulateNextSteps(baseNode);
+                return;
+            }
+        }
+        std::cout << "Simulation wrong: " << current_tick << std::endl;
+
+        baseNode->children.clear();
+        baseNode->state.ball.setPosition(g.ball.x, g.ball.y, g.ball.z);
+        baseNode->state.ball.setVelocity(g.ball.velocity_x, g.ball.velocity_y, g.ball.velocity_z);
+        baseNode->state.current_tick = g.current_tick;
+
+        setRobotsParameters(baseNode, g);
+        tick(baseNode);
+        /// TODO:if sim failed ???
+    }
+
+}
+
+void Simulation::setRobotsParameters(const shared_ptr<TreeNode> &node, const Game &g) {
+    for (Robot rob: g.robots) {
+        SimulationEntity erob;
+        erob.id = rob.id;
+        erob.player_id = rob.player_id;
+        erob.setPosition(rob.x, rob.y, rob.z);
+        erob.setVelocity(rob.velocity_x, rob.velocity_y, rob.velocity_z);
+        erob.setNormal(rob.touch_normal_x, rob.touch_normal_y, rob.touch_normal_z);
+        erob.touch = rob.touch;
+
+        // Our robots
+        if (rob.is_teammate) {
+            erob.position = Vec3(rob.x, rob.y, rob.z);
+            Vec3 target_pos = resolveTargetPosition(erob);
+            Vec3 target_velocity = Vec3(target_pos.getX() - rob.x, 0.0,
+                                        target_pos.getZ() - rob.z);
+            erob.action.target_velocity_x = target_velocity.getX();
+            erob.action.target_velocity_y = target_velocity.getY();
+            erob.action.target_velocity_z = target_velocity.getZ();
+            erob.action.jump_speed = 0.0;
+            erob.action.use_nitro = false;
+        } else {
+            erob.action.target_velocity_x = rob.velocity_x;
+            erob.action.target_velocity_y = rob.velocity_y;
+            erob.action.target_velocity_z = rob.velocity_y;
+            erob.position = Vec3(rob.x, rob.y, rob.z);
+            erob.action.jump_speed = 0.0;
+            erob.action.use_nitro = false;
+        }
+
+        node->state.robots.push_back(erob);
+    }
+}
+
 
 void Simulation::tick(shared_ptr<TreeNode> parent) {
     double delta_time = 1.0 / rules.TICKS_PER_SECOND;
@@ -110,29 +152,14 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
     for (SimulationEntity &rob: st.robots) {
         //        TODO: expand tree
 
-        if (rob.id == goalKeeper.robotId) {
-            Vec3 target_pos = goalKeeper.anchorPoint; // goal keeper default start position
-            Vec3 target_velocity = Vec3(target_pos.getX() - rob.position.getX(), 0.0,
-                                        target_pos.getZ() - rob.position.getZ());
+        if (rob.teammate) {
+            Vec3 target_pos = resolveTargetPosition(rob);
+            Vec3 target_velocity = target_pos - rob.position;
             rob.action.target_velocity_x = target_velocity.getX();
             rob.action.target_velocity_y = target_velocity.getY();
             rob.action.target_velocity_z = target_velocity.getZ();
             rob.action.jump_speed = 0.0;
             rob.action.use_nitro = false;
-        } else {
-            // Our robots
-            for (const RoleParameters &rp: forwards) {
-                if (rp.robotId == rob.id) {
-                    Vec3 target_pos = rp.anchorPoint;
-                    Vec3 target_velocity = Vec3(target_pos.getX() - rob.position.getX(), 0.0,
-                                                target_pos.getZ() - rob.position.getZ());
-                    rob.action.target_velocity_x = target_velocity.getX();
-                    rob.action.target_velocity_y = target_velocity.getY();
-                    rob.action.target_velocity_z = target_velocity.getZ();
-                    rob.action.jump_speed = 0.0;
-                    rob.action.use_nitro = false;
-                }
-            }
         }
     }
 
@@ -159,8 +186,6 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
     dumpNode(node);
 
     calculateNodeBounty(node);
-
-    checkForAlternativeNodes(node, parent);
 
     if (!processingNodes.empty()) {
         shared_ptr<TreeNode> tn = processingNodes.front();
@@ -216,10 +241,11 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
         }
     }
 
-    engine->collide_with_arena(node->state.ball);
+    Vec3 collisionPoint = engine->collide_with_arena(node->state.ball);
+
 
     if (abs(node->state.ball.position.getZ()) > arena.depth / 2.0 + node->state.ball.radius) {
-        goal_scored();
+        node->state.bounty += 100 * (node->state.ball.position.getZ() > 0) ? 1 : -1;
     }
 
     for (SimulationEntity &robot : node->state.robots) {
@@ -238,23 +264,36 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
 }
 
 void Simulation::calculateNodeBounty(shared_ptr<TreeNode> node) {
-    TreeNode *tmp = node.get();
-    //TODO::: calc collision bounty
-    if (!node->state.ball_collision.empty()) {
-        for (const CollisionParams &cp: node->state.ball_collision) {
-            if (isBallDirectionToGoal(cp.anyEntity, true)) {
-                node->state.bounty += -10;
-            } else if (isBallDirectionToGoal(cp.anyEntity, false)) {
-                node->state.bounty += 10;
-            } else if (cp.anyEntity.velocity.getZ() < 0) {
-                node->state.bounty += -5;
-            } else {
-                node->state.bounty += 1;
-            }
+    if (node->state.ball_collision.empty())
+        return;
+
+    for (const CollisionParams &cp: node->state.ball_collision) {
+        if (isBallDirectionToGoal(cp.anyEntity, true)) {
+            node->state.bounty += -10;
+        } else if (isBallDirectionToGoal(cp.anyEntity, false)) {
+            node->state.bounty += 10;
+        } else if (cp.anyEntity.velocity.getZ() < 0) {
+            node->state.bounty += -5;
+        } else {
+            node->state.bounty += 1;
         }
     }
+
+    TreeNode *tmp = node.get();
+    //TODO::: calc collision bounty
+
     while (tmp->parent != NULL) {
-        tmp->parent->state.bounty += node->state.bounty;
+        tmp->parent->state.bounty += tmp->state.bounty;
+        for (const CollisionParams &cp: tmp->state.ball_collision) {
+            bool shouldAdd = true;
+            for (const CollisionParams &pcp: tmp->parent->state.ball_collision) {
+                if (cp == pcp)
+                    shouldAdd = false;
+            }
+
+            if (shouldAdd)
+                tmp->parent->state.ball_collision.push_back(cp);
+        }
         tmp = tmp->parent;
     }
 }
@@ -281,66 +320,6 @@ void Simulation::dumpNode(shared_ptr<TreeNode> node) {
     writeLog(ss);
     std::stringstream().swap(ss);
 #endif
-}
-
-void Simulation::setTick(const Game &g) {
-    current_tick = g.current_tick;
-    if (baseNode->state.current_tick != current_tick) {
-        for (const shared_ptr<TreeNode> &tn: baseNode->children) {
-            if (tn->state.current_tick == current_tick &&
-                tn->state.ball.position == Vec3(g.ball.x, g.ball.y, g.ball.z)) {
-                adjustRobotsPositions(g.robots);
-                truncTree(tn);
-                simulateNextSteps(baseNode);
-                return;
-            }
-        }
-        std::cout << "Simulation wrong: " << current_tick << std::endl;
-
-        baseNode->children.clear();
-        baseNode->state.ball.setPosition(g.ball.x, g.ball.y, g.ball.z);
-        baseNode->state.ball.setVelocity(g.ball.velocity_x, g.ball.velocity_y, g.ball.velocity_z);
-        baseNode->state.current_tick = g.current_tick;
-
-        for (Robot rob: g.robots) {
-            SimulationEntity erob;
-            erob.id = rob.id;
-            erob.player_id = rob.player_id;
-            erob.setPosition(rob.x, rob.y, rob.z);
-            erob.setVelocity(rob.velocity_x, rob.velocity_y, rob.velocity_z);
-            erob.setNormal(rob.touch_normal_x, rob.touch_normal_y, rob.touch_normal_z);
-            erob.touch = rob.touch;
-
-            if (rob.id == goalKeeper.robotId) {
-                Vec3 target_pos = goalKeeper.anchorPoint; // goal keeper default start position
-                Vec3 target_velocity = Vec3(target_pos.getX() - rob.x, 0.0, target_pos.getZ() - rob.z);
-                erob.action.target_velocity_x = target_velocity.getX();
-                erob.action.target_velocity_y = target_velocity.getY();
-                erob.action.target_velocity_z = target_velocity.getZ();
-                erob.action.jump_speed = 0.0;
-                erob.action.use_nitro = false;
-            } else {
-                // Our robots
-                for (RoleParameters rp: forwards) {
-                    if (rp.robotId == rob.id) {
-                        Vec3 target_pos = rp.anchorPoint;
-                        Vec3 target_velocity = Vec3(target_pos.getX() - rob.x, 0.0,
-                                                    target_pos.getZ() - rob.z);
-                        erob.action.target_velocity_x = target_velocity.getX();
-                        erob.action.target_velocity_y = target_velocity.getY();
-                        erob.action.target_velocity_z = target_velocity.getZ();
-                        erob.action.jump_speed = 0.0;
-                        erob.action.use_nitro = false;
-                    }
-                }
-            }
-            ////sdjflsdjhfgklsjklfjskl
-            baseNode->state.robots.push_back(erob);
-        }
-        tick(baseNode);
-        /// TODO:if sim failed ???
-    }
-
 }
 
 void Simulation::adjustRobotsPositions(const vector<Robot> &rs) {
@@ -407,6 +386,11 @@ bool Simulation::isBallDirectionToGoal(const SimulationEntity &ball, bool myGoal
     return false;
 }
 
-void Simulation::checkForAlternativeNodes(const shared_ptr<TreeNode>& examineNode, const shared_ptr<TreeNode>& parent) {
+Vec3 Simulation::resolveTargetPosition(const SimulationEntity& robot) {
+    if (robot.id == goalKeeperId){
+        return defaultGoalKeeperPosition;
+    }
 
+
+    return Vec3(<#initializer#>, <#initializer#>, <#initializer#>);
 }

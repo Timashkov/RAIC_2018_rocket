@@ -37,11 +37,15 @@ public:
     SimulationEntity anyEntity;
     SimulationEntity robot;
 
+    friend bool operator==(const CollisionParams &lhs, const CollisionParams &rhs) {
+        return lhs.tick == rhs.tick && lhs.bounty == rhs.bounty && lhs.anyEntity == rhs.anyEntity &&
+               lhs.robot == rhs.robot;
+    }
 };
 
 class State {
 public:
-    State():bounty(0) {};
+    State() : bounty(0) {};
 
     State(const State &source) :
             ball(source.ball),
@@ -50,7 +54,8 @@ public:
             current_tick(source.current_tick),
             ball_collision(source.ball_collision),
             robots_collision(source.robots_collision),
-            bounty(0){}
+            ball_wall_collision(source.ball_wall_collision),
+            bounty(0) {}
 
     ~State() {};
 
@@ -60,6 +65,7 @@ public:
     int current_tick;
     vector<CollisionParams> ball_collision;
     vector<CollisionParams> robots_collision;
+    vector<CollisionParams> ball_wall_collision;
     int bounty;
 };
 
@@ -83,8 +89,11 @@ private:
     bool inited;
     int current_tick;
 
-    RoleParameters goalKeeper;
-    vector<RoleParameters> forwards;
+    int goalKeeperId;
+    Vec3 defaultGoalKeeperPosition;
+
+//    RoleParameters goalKeeper;
+//    vector<RoleParameters> forwards;
 
     shared_ptr<TreeNode> baseNode;
     queue<shared_ptr<TreeNode>> processingNodes;
@@ -96,6 +105,7 @@ private:
 public:
     Simulation() :
             inited(false),
+            defaultGoalKeeperPosition(Vec3::None),
             current_tick(0) {}
 
     ~Simulation() {}
@@ -105,15 +115,13 @@ public:
 
     void start();
 
-    void tick(shared_ptr<TreeNode> node);
+    void tick(shared_ptr<TreeNode> parent);
 
     inline bool isInited() const { return inited; };
 
     void setTick(const Game &g);
 
     void update(shared_ptr<TreeNode> &node, double delta_time);
-
-    inline void goal_scored() {};
 
     void dumpNode(shared_ptr<TreeNode> node);
 
@@ -127,9 +135,13 @@ public:
 
     void calculateNodeBounty(shared_ptr<TreeNode> shared_ptr);
 
-    bool isBallDirectionToGoal(const SimulationEntity& ball, bool myGoal);
+    bool isBallDirectionToGoal(const SimulationEntity &ball, bool myGoal);
 
-    void checkForAlternativeNodes(const shared_ptr<TreeNode>& examineNode, const shared_ptr<TreeNode>& parent);
+    void setInitialState(const Game &g, State &st);
+
+    void setRobotsParameters(const shared_ptr<TreeNode> &node, const Game &g);
+
+    Vec3 resolveTargetPosition(const SimulationEntity &robot);
 };
 
 #endif /* Simulation_h */

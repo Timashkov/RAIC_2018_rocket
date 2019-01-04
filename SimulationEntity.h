@@ -11,7 +11,7 @@
 class SimulationEntity {
 public:
     SimulationEntity() : position(0, 0, 0), velocity(0, 0, 0), touch_normal(Vec3::None),
-                         radius(0), mass(0), radius_change_speed(0),
+                         radius(0), mass(0), radius_change_speed(0), teammate(false),
                          touch(false), nitro(0), alive(false), respawn_ticks(0), arena_e(0.0) {}
 
     ~SimulationEntity() {}
@@ -28,6 +28,7 @@ public:
     bool touch;
     double nitro;
     bool alive;
+    bool teammate;
     int respawn_ticks;
     int id;
     int player_id;
