@@ -109,35 +109,33 @@ void Simulation::setTick(const Game &g) {
 
 void Simulation::setRobotsParameters(const shared_ptr<TreeNode> &node, const Game &g) {
     for (Robot rob: g.robots) {
-        SimulationEntity erob;
-        erob.id = rob.id;
-        erob.player_id = rob.player_id;
-        erob.setPosition(rob.x, rob.y, rob.z);
-        erob.setVelocity(rob.velocity_x, rob.velocity_y, rob.velocity_z);
-        erob.setNormal(rob.touch_normal_x, rob.touch_normal_y, rob.touch_normal_z);
-        erob.touch = rob.touch;
-
-        // Our robots
-        if (rob.is_teammate) {
-            erob.position = Vec3(rob.x, rob.y, rob.z);
-            Vec3 target_pos = resolveTargetPosition(erob);
-            Vec3 target_velocity = Vec3(target_pos.getX() - rob.x, 0.0,
-                                        target_pos.getZ() - rob.z);
-            erob.action.target_velocity_x = target_velocity.getX();
-            erob.action.target_velocity_y = target_velocity.getY();
-            erob.action.target_velocity_z = target_velocity.getZ();
-            erob.action.jump_speed = 0.0;
-            erob.action.use_nitro = false;
-        } else {
-            erob.action.target_velocity_x = rob.velocity_x;
-            erob.action.target_velocity_y = rob.velocity_y;
-            erob.action.target_velocity_z = rob.velocity_y;
-            erob.position = Vec3(rob.x, rob.y, rob.z);
-            erob.action.jump_speed = 0.0;
-            erob.action.use_nitro = false;
+        for (SimulationEntity &erob: node->state.robots){
+            if (erob.id == rob.id){
+                erob.setPosition(rob.x, rob.y, rob.z);
+                erob.setVelocity(rob.velocity_x, rob.velocity_y, rob.velocity_z);
+                erob.setNormal(rob.touch_normal_x, rob.touch_normal_y, rob.touch_normal_z);
+                erob.touch = rob.touch;
+                
+                // Our robots
+                if (rob.is_teammate) {
+                    Vec3 target_pos = resolveTargetPosition(erob);
+                    Vec3 target_velocity = Vec3(target_pos.getX() - rob.x, 0.0,
+                                                target_pos.getZ() - rob.z);
+                    erob.action.target_velocity_x = target_velocity.getX();
+                    erob.action.target_velocity_y = target_velocity.getY();
+                    erob.action.target_velocity_z = target_velocity.getZ();
+                    erob.action.jump_speed = 0.0;
+                    erob.action.use_nitro = false;
+                } else {
+                    erob.action.target_velocity_x = rob.velocity_x;
+                    erob.action.target_velocity_y = rob.velocity_y;
+                    erob.action.target_velocity_z = rob.velocity_y;
+                    erob.action.jump_speed = 0.0;
+                    erob.action.use_nitro = false;
+                }
+            }
+            
         }
-
-        node->state.robots.push_back(erob);
     }
 }
 
@@ -245,7 +243,7 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
 
 
     if (abs(node->state.ball.position.getZ()) > arena.depth / 2.0 + node->state.ball.radius) {
-        node->state.bounty += 100 * (node->state.ball.position.getZ() > 0) ? 1 : -1;
+        node->state.bounty += (node->state.ball.position.getZ() > 0) ? 100 : -100;
     }
 
     for (SimulationEntity &robot : node->state.robots) {
@@ -284,10 +282,10 @@ void Simulation::calculateNodeBounty(shared_ptr<TreeNode> node) {
 
     while (tmp->parent != NULL) {
         tmp->parent->state.bounty += tmp->state.bounty;
-        for (const CollisionParams &cp: tmp->state.ball_collision) {
+        for (CollisionParams cp: tmp->state.ball_collision) {
             bool shouldAdd = true;
             for (const CollisionParams &pcp: tmp->parent->state.ball_collision) {
-                if (cp == pcp)
+                if (pcp == cp)
                     shouldAdd = false;
             }
 
@@ -392,5 +390,5 @@ Vec3 Simulation::resolveTargetPosition(const SimulationEntity& robot) {
     }
 
 
-    return Vec3(<#initializer#>, <#initializer#>, <#initializer#>);
+    return Vec3(0.0, 1.0, -1.0);
 }

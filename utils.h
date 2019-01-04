@@ -32,7 +32,7 @@ class Vec3 {
 private:
     vector<double> vec;
 public:
-    Vec3(const double &x, const double &y, const double &z) {
+    Vec3(const double x, const double y, const double z) {
         vec = {x, y, z};
     }
 

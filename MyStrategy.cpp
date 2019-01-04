@@ -38,7 +38,7 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
 
     if (!sim.isInited()) {
         sim.init(game, rules, goalKeeper, forwards);
-        sim.start();
+//        sim.start();
     }
     sim.setTick(game);
 
@@ -57,12 +57,19 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
 
     //    unique_ptr<BallExtended> ballExtended(new BallExtended(game.ball));
 
-    if (me.id == goalKeeper.robotId) {
-        actAsGoalKeeper(me, rules, game, action);
-        return;
+    for (SimulationEntity &se : sim.getBaseNode()->state.robots) {
+        if (se.id == me.id) {
+            action = se.action;
+            return;
+        }
     }
-
-    actAsForward(me, rules, game, action);
+    
+//    if (me.id == goalKeeper.robotId) {
+//        actAsGoalKeeper(me, rules, game, action);
+//        return;
+//    }
+//
+//    actAsForward(me, rules, game, action);
 }
 
 void MyStrategy::actAsGoalKeeper(const Robot &me, const Rules &rules, const Game &game, Action &action) {
