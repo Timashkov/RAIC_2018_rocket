@@ -66,7 +66,7 @@ public:
     int current_tick;
     vector<CollisionParams> ball_collision;
     vector<CollisionParams> robots_collision;
-    vector<CollisionParams> ball_wall_collision;
+    vector<Vec3> ball_wall_collision;
     int bounty;
     vector<double> distances;
 };
@@ -81,6 +81,8 @@ public:
             state(st),
             parent(pr) {}
 
+    TreeNode(const TreeNode * tn):
+        state(tn->state), parent(tn->parent){}
     ~TreeNode() {}
 
     vector<shared_ptr<TreeNode> > children;
@@ -140,7 +142,9 @@ public:
 
     void setRobotsParameters(const shared_ptr<TreeNode> &node, const Game &g);
 
-    Action resolveTargetAction(const SimulationEntity& robot, const TreeNode* parentNode);
+    Action resolveTargetAction(const SimulationEntity& robot, const TreeNode* parentNode, int calcAttempt);
+
+    void checkAlternatives(shared_ptr<TreeNode> baseNode);
 };
 
 #endif /* Simulation_h */
