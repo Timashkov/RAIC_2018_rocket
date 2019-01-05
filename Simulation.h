@@ -55,6 +55,7 @@ public:
             ball_collision(source.ball_collision),
             robots_collision(source.robots_collision),
             ball_wall_collision(source.ball_wall_collision),
+            distances(source.distances),
             bounty(0) {}
 
     ~State() {};
@@ -67,6 +68,7 @@ public:
     vector<CollisionParams> robots_collision;
     vector<CollisionParams> ball_wall_collision;
     int bounty;
+    vector<double> distances;
 };
 
 class TreeNode {
@@ -91,6 +93,7 @@ private:
 
     int goalKeeperId;
     Vec3 defaultGoalKeeperPosition;
+    Vec3 goalTarget;
 
     shared_ptr<TreeNode> baseNode;
     queue<shared_ptr<TreeNode>> processingNodes;
@@ -101,9 +104,10 @@ private:
 
 public:
     Simulation() :
-            inited(false),
-            defaultGoalKeeperPosition(Vec3::None),
-            current_tick(0) {}
+    inited(false),
+    defaultGoalKeeperPosition(Vec3::None),
+    goalTarget(Vec3::None),
+    current_tick(0) {}
 
     ~Simulation() {}
 
@@ -136,7 +140,7 @@ public:
 
     void setRobotsParameters(const shared_ptr<TreeNode> &node, const Game &g);
 
-    Vec3 resolveTargetPosition(const SimulationEntity &robot);
+    Action resolveTargetAction(const SimulationEntity& robot, const TreeNode* parentNode);
 };
 
 #endif /* Simulation_h */
