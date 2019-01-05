@@ -139,21 +139,6 @@ void testRun(){
 //    sim.start();
 }
 
-void testRun2(){
-
-    //3.251846380693756
-    //[1]    double    3.2518466666666828
-    //[1]    double    3.2518500000000001
-    
-    std::cout<< __DBL_EPSILON__ << std::endl;
-    
-    double val = 3.2518466666666828;
-    std::cout<<std::setprecision (15)<< val <<std::endl;
-    double val1 = round( val * 100000.0 ) / 100000.0;
-    
-    std::cout<<std::setprecision (15)<< val1 <<"  "<<(val1==val)<<"  "<< (abs(val1-val) < 0.00001) <<std::endl;
-}
-
 int main(int argc, char* argv[]) {
     if (argc == 4) {
         Runner runner(argv[1], argv[2], argv[3]);
@@ -163,7 +148,7 @@ int main(int argc, char* argv[]) {
         runner.run();
     }
     
-//        testRun2();
+//        testRun1();
     return 0;
 }
 

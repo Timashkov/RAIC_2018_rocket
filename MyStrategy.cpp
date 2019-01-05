@@ -1,5 +1,4 @@
 #include "MyStrategy.h"
-#include "VecUtils.h"
 #include <cmath>
 #include <cstdio>
 #include <iostream>
@@ -59,7 +58,7 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
 
     for (SimulationEntity &se : sim.getBaseNode()->state.robots) {
         if (se.id == me.id) {
-            cout<< "move robot "<< me.id << "  on tick "<< sim.getBaseNode()->state.current_tick << endl;
+//            cout<< "move robot "<< me.id << "  on tick "<< sim.getBaseNode()->state.current_tick << endl;
             action = se.action;
             return;
         }
@@ -74,52 +73,52 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
 }
 
 void MyStrategy::actAsGoalKeeper(const Robot &me, const Rules &rules, const Game &game, Action &action) {
-    // Стратегия защитника (или атакующего, не нашедшего хорошего момента для удара):
-    // Будем стоять посередине наших ворот
-    Vec2 target_pos = Vec2(0.0, -(rules.arena.depth / 2.0) + rules.arena.bottom_radius);
-    // Причем, если мяч движется в сторону наших ворот
-    if (game.ball.velocity_z < 0) {
-        // Найдем время и место, в котором мяч пересечет линию ворот
-        double t = (target_pos.getY() - game.ball.z) / game.ball.velocity_z;
-        double x = game.ball.x + game.ball.velocity_x * t;
-        // Если это место - внутри ворот
-        if (fabs(x) < (rules.arena.goal_width / 2.0)) {
-            // То пойдем защищать его
-            target_pos.setX(x);
-        }
-    }
-
-    // Если при прыжке произойдет столкновение с мячом, и мы находимся
-    // с той же стороны от мяча, что и наши ворота, прыгнем, тем самым
-    // ударив по мячу сильнее в сторону противника
-    bool is_jump = sqrt(pow(me.x - game.ball.x, 2)
-                        + pow(me.y - game.ball.y, 2)
-                        + pow(me.z - game.ball.z, 2)) < rules.BALL_RADIUS + rules.ROBOT_MAX_RADIUS;
-    is_jump = is_jump && me.z < game.ball.z;
-
-
-    // Установка нужных полей для желаемого действия
-    Vec2 target_velocity = Vec2(target_pos.getX() - me.x, target_pos.getY() - me.z).mul(rules.ROBOT_MAX_GROUND_SPEED);
-    //    action = Action();
-    action.target_velocity_x = target_velocity.getX();
-    action.target_velocity_y = 0.0;
-    action.target_velocity_z = target_velocity.getY();
-    action.jump_speed = is_jump ? rules.ROBOT_MAX_JUMP_SPEED : 0.0;
-    action.use_nitro = false;
+//    // Стратегия защитника (или атакующего, не нашедшего хорошего момента для удара):
+//    // Будем стоять посередине наших ворот
+//    Vec2 target_pos = Vec2(0.0, -(rules.arena.depth / 2.0) + rules.arena.bottom_radius);
+//    // Причем, если мяч движется в сторону наших ворот
+//    if (game.ball.velocity_z < 0) {
+//        // Найдем время и место, в котором мяч пересечет линию ворот
+//        double t = (target_pos.getY() - game.ball.z) / game.ball.velocity_z;
+//        double x = game.ball.x + game.ball.velocity_x * t;
+//        // Если это место - внутри ворот
+//        if (fabs(x) < (rules.arena.goal_width / 2.0)) {
+//            // То пойдем защищать его
+//            target_pos.setX(x);
+//        }
+//    }
+//
+//    // Если при прыжке произойдет столкновение с мячом, и мы находимся
+//    // с той же стороны от мяча, что и наши ворота, прыгнем, тем самым
+//    // ударив по мячу сильнее в сторону противника
+//    bool is_jump = sqrt(pow(me.x - game.ball.x, 2)
+//                        + pow(me.y - game.ball.y, 2)
+//                        + pow(me.z - game.ball.z, 2)) < rules.BALL_RADIUS + rules.ROBOT_MAX_RADIUS;
+//    is_jump = is_jump && me.z < game.ball.z;
+//
+//
+//    // Установка нужных полей для желаемого действия
+//    Vec2 target_velocity = Vec2(target_pos.getX() - me.x, target_pos.getY() - me.z).mul(rules.ROBOT_MAX_GROUND_SPEED);
+//    //    action = Action();
+//    action.target_velocity_x = target_velocity.getX();
+//    action.target_velocity_y = 0.0;
+//    action.target_velocity_z = target_velocity.getY();
+//    action.jump_speed = is_jump ? rules.ROBOT_MAX_JUMP_SPEED : 0.0;
+//    action.use_nitro = false;
 }
 
 void MyStrategy::actAsForward(const Robot &me, const Rules &rules, const Game &game, Action &action) {
 
-    // Если при прыжке произойдет столкновение с мячом, и мы находимся
-    // с той же стороны от мяча, что и наши ворота, прыгнем, тем самым
-    // ударив по мячу сильнее в сторону противника
-
-    for (SimulationEntity &se : sim.getBaseNode()->state.robots) {
-        if (se.id == me.id) {
-            action = se.action;
-            return;
-        }
-    }
+//    // Если при прыжке произойдет столкновение с мячом, и мы находимся
+//    // с той же стороны от мяча, что и наши ворота, прыгнем, тем самым
+//    // ударив по мячу сильнее в сторону противника
+//
+//    for (SimulationEntity &se : sim.getBaseNode()->state.robots) {
+//        if (se.id == me.id) {
+//            action = se.action;
+//            return;
+//        }
+//    }
 
 //    bool is_jump = sqrt(pow(me.x - game.ball.x, 2)
 //                        + pow(me.y - game.ball.y, 2)

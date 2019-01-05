@@ -75,7 +75,7 @@ void Simulation::setTick(const Game &g) {
             }
         }
         
-        std::cout << "Simulation wrong: " << current_tick << std::endl;
+//        std::cout << "Simulation wrong: " << current_tick << std::endl;
 
         baseNode->children.clear();
         baseNode->state.ball.setPosition(g.ball.x, g.ball.y, g.ball.z);
@@ -86,14 +86,9 @@ void Simulation::setTick(const Game &g) {
         tick(baseNode);
         
         if (baseNode->state.bounty < 10){
-            cout<<" bounty < 10 "<<endl;
+//            cout<<" bounty < 10 "<<endl;
             tick(baseNode);
         }
-//        int bounty = baseNode->state.bounty;
-//        for (int i = 0; i < 5 && bounty < 10 ; i++){
-//            tick(baseNode);
-//            bounty = baseNode->state.bounty - bounty;
-//        }
     }
 
 }
@@ -193,7 +188,7 @@ void Simulation::update(shared_ptr<TreeNode> &node, double delta_time) {
 
     for (SimulationEntity &robot : node->state.robots) {
         if (engine->collide_entities(robot, node->state.ball)) {
-            std::cout << "Update: ball collision detected" << std::endl;
+//            std::cout << "Update: ball collision detected" << std::endl;
             bool found = false;
             CollisionParams cpi = CollisionParams(node->state.current_tick, node->state.ball, robot);
             for (const CollisionParams &cp: node->state.ball_collision) {
@@ -391,24 +386,24 @@ Action Simulation::resolveTargetAction(const SimulationEntity& robot, const Tree
             return act;
         }
         //attacker goes to ball position
-        cout<< "Goal Target "<< goalTarget.toString() <<endl;
-        cout<< "Ball position "<< ball.position.toString() << endl;
+//        cout<< "Goal Target "<< goalTarget.toString() <<endl;
+//        cout<< "Ball position "<< ball.position.toString() << endl;
         
         Vec3 goalDirection = goalTarget - ball.position;
         Vec3 ball_dan_norm = (engine->dan_to_arena(ball.position)).normal;
         
         Vec3 checkPoint = ball.position - ((goalDirection.normalized()-ball_dan_norm) * (robot.radius + ball.radius));
         
-        cout<< " Check point "<< checkPoint.toString() <<" parentNode tick: "<<parentNode->state.current_tick<<endl;
+//        cout<< " Check point "<< checkPoint.toString() <<" parentNode tick: "<<parentNode->state.current_tick<<endl;
         
         
         Vec3 target = robot.position - ((robot.position - checkPoint).normalized()*(robot.radius + ball.radius));
         double distance = (ball.position-robot.position).len();
         
-        cout<< "New target: "<<target.toString()<< endl;
-        cout<< "Current velocity "<<robot.velocity.len()<<endl;
-        cout<< "Current position "<<robot.position.toString()<<endl;
-        cout<< "Distance: "<< distance <<endl;
+//        cout<< "New target: "<<target.toString()<< endl;
+//        cout<< "Current velocity "<<robot.velocity.len()<<endl;
+//        cout<< "Current position "<<robot.position.toString()<<endl;
+//        cout<< "Distance: "<< distance <<endl;
         
         
         Action act;
@@ -418,11 +413,11 @@ Action Simulation::resolveTargetAction(const SimulationEntity& robot, const Tree
 //        if ((engine->dan_to_arena(robot.position)).normal == Vec3(0,1,0)){
 //            del.setY(0.0);
 //        }
-        cout<< "Target velocity "<<del.len()<<endl;
+//        cout<< "Target velocity "<<del.len()<<endl;
         act.target_velocity_x = del.getX();
         act.target_velocity_y = del.getY();
         act.target_velocity_z = del.getZ();
-        cout<<endl;
+//        cout<<endl;
         return act;
 
     }
