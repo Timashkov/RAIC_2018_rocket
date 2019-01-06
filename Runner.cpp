@@ -58,9 +58,9 @@ void testRun1(){
     game->ball.x = 0.0;
     game->ball.y = 6.092095;
     game->ball.z = 0.0;
-    game->ball.velocity_x = 0.0;
+    game->ball.velocity_x = 1.0;
     game->ball.velocity_y = 0.0;
-    game->ball.velocity_z = 0.0;
+    game->ball.velocity_z = 1.0;
     game->ball.radius = 2.0;
     
     game->current_tick = 0;
@@ -70,7 +70,7 @@ void testRun1(){
     r1.x= 7.856392606191905;
     r1.y =1.0;
     r1.z=-18.39231076339711;
-    r1.velocity_x= 0.0;
+    r1.velocity_x= -1.0;
     r1.velocity_y= 0.0;
     r1.velocity_z=0.0;
     r1.radius =1.0;
@@ -82,65 +82,95 @@ void testRun1(){
     r1.is_teammate = true;
     game->robots.push_back(r1);
     
-    Robot r2 = Robot();
-    r2.id = 2;
-    r2.player_id = 0;
-    r2.x= -5.860171;
-    r2.y =1.0;
-    r2.z=-19.122196;
-    r2.velocity_x= 0.0;
-    r2.velocity_y= 0.0;
-    r2.velocity_z=0.0;
-    r2.radius =1.0;
-    r2.nitro_amount=0.0;
-    r2.touch_normal_x=0.0;
-    r2.touch_normal_y = 1.0;
-    r2.touch_normal_z=0.0;
-    r2.touch = true;
-    r2.is_teammate = true;
-    game->robots.push_back(r2);
-    
-    Robot r3 = Robot();
-    r3.id = 3;
-    r3.player_id = 1;
-    r3.x= -7.856392606191905;
-    r3.y =1.0;
-    r3.z=18.39231076339711;
-    r3.velocity_x= 0.0;
-    r3.velocity_y= 0.0;
-    r3.velocity_z=0.0;
-    r3.radius =1.0;
-    r3.nitro_amount=0.0;
-    r3.touch_normal_x=0.0;
-    r3.touch_normal_y = 1.0;
-    r3.touch_normal_z=0.0;
-    r3.touch = true;
-    game->robots.push_back(r3);
-    
-    Robot r4 = Robot();
-    r4.id = 4;
-    r4.player_id = 1;
-    r4.x = 12.000012052303903;
-    r4.y = 1.0;
-    r4.z = 15.99999096076498;
-    r4.velocity_x= 0.0;
-    r4.velocity_y= 0.0;
-    r4.velocity_z=0.0;
-    r4.radius =1.0;
-    r4.nitro_amount=0.0;
-    r4.touch_normal_x=0.0;
-    r4.touch_normal_y = 1.0;
-    r4.touch_normal_z=0.0;
-    r4.touch = true;
-    game->robots.push_back(r4);
-    
-    RoleParameters gk;
-    vector<RoleParameters> forwards;
-    
-    sim.init(*game, *rules, gk, forwards);
-    game->current_tick=1;
-    sim.setTick(*game);
+//    Robot r2 = Robot();
+//    r2.id = 2;
+//    r2.player_id = 0;
+//    r2.x= -5.860171;
+//    r2.y =1.0;
+//    r2.z=-19.122196;
+//    r2.velocity_x= 0.0;
+//    r2.velocity_y= 0.0;
+//    r2.velocity_z=0.0;
+//    r2.radius =1.0;
+//    r2.nitro_amount=0.0;
+//    r2.touch_normal_x=0.0;
+//    r2.touch_normal_y = 1.0;
+//    r2.touch_normal_z=0.0;
+//    r2.touch = true;
+//    r2.is_teammate = true;
+//    game->robots.push_back(r2);
+//
+//    Robot r3 = Robot();
+//    r3.id = 3;
+//    r3.player_id = 1;
+//    r3.x= -7.856392606191905;
+//    r3.y =1.0;
+//    r3.z=18.39231076339711;
+//    r3.velocity_x= 0.0;
+//    r3.velocity_y= 0.0;
+//    r3.velocity_z=0.0;
+//    r3.radius =1.0;
+//    r3.nitro_amount=0.0;
+//    r3.touch_normal_x=0.0;
+//    r3.touch_normal_y = 1.0;
+//    r3.touch_normal_z=0.0;
+//    r3.touch = true;
+//    game->robots.push_back(r3);
+//
+//    Robot r4 = Robot();
+//    r4.id = 4;
+//    r4.player_id = 1;
+//    r4.x = 12.000012052303903;
+//    r4.y = 1.0;
+//    r4.z = 15.99999096076498;
+//    r4.velocity_x= 0.0;
+//    r4.velocity_y= 0.0;
+//    r4.velocity_z=0.0;
+//    r4.radius =1.0;
+//    r4.nitro_amount=0.0;
+//    r4.touch_normal_x=0.0;
+//    r4.touch_normal_y = 1.0;
+//    r4.touch_normal_z=0.0;
+//    r4.touch = true;
+//    game->robots.push_back(r4);
+//
+//    RoleParameters gk;
+//    vector<RoleParameters> forwards;
+//
+//    sim.init(*game, *rules, gk, forwards);
+//    game->current_tick=1;
+//    sim.setTick(*game);
 
+    
+    
+    int first_attempt = 20;
+    Vec3 ball_velocity = Vec3(game->ball.velocity_x, game->ball.velocity_y, game->ball.velocity_z);
+    Vec3 ball_position = ball_velocity*20+ Vec3(game->ball.x, game->ball.y, game->ball.z);
+    
+    double delta_time = 1/60000;
+    SimulationEntity rr1;
+    rr1.velocity = Vec3(r1.velocity_x, r1.velocity_y, r1.velocity_z);
+    rr1.touch_normal = Vec3(r1.touch_normal_x, r1.touch_normal_y, r1.touch_normal_z);
+    rr1.position = Vec3(r1.x, r1.y,r1.z);
+    Vec3 action_target_velocity = (ball_position - rr1.position);
+    cout<< "initial delta : "<< action_target_velocity.len()<<endl;
+    action_target_velocity = action_target_velocity.normalized()*rules->ROBOT_MAX_GROUND_SPEED;
+    for (int i = 0; i < first_attempt*100; i++){
+        
+        Vec3 target_velocity = clamp(action_target_velocity, rules->ROBOT_MAX_GROUND_SPEED);
+        target_velocity = target_velocity - (rr1.touch_normal * dot(rr1.touch_normal, target_velocity));
+        Vec3 target_velocity_change = target_velocity - rr1.velocity;
+        if (target_velocity_change.len() > 0.0) {
+            double acceleration = rules->ROBOT_ACCELERATION * max(0.0, rr1.touch_normal.getY());
+            rr1.velocity = rr1.velocity + clamp(target_velocity_change.normalized() * acceleration * delta_time,
+                                                target_velocity_change.len());
+        }
+        
+        rr1.velocity = clamp(rr1.velocity, rules->MAX_ENTITY_SPEED);
+        rr1.position = rr1.position + rr1.velocity * delta_time;
+    }
+    
+    cout<< "delta : "<< (rr1.position - ball_position).len()<<endl;
 }
 
 int main(int argc, char* argv[]) {
