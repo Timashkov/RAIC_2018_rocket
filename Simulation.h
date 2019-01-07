@@ -94,6 +94,10 @@ private:
     int current_tick;
 
     int goalKeeperId;
+    int forwardId;
+    int halfBackId;
+    Vec3 defaultHalfBackPosition;
+    Vec3 defaultForwardPosition;
     Vec3 defaultGoalKeeperPosition;
     Vec3 goalTarget;
 
@@ -108,15 +112,22 @@ public:
     Simulation() :
     inited(false),
     defaultGoalKeeperPosition(Vec3::None),
+    defaultHalfBackPosition(Vec3::None),
+    defaultForwardPosition(Vec3::None),
     goalTarget(Vec3::None),
-    current_tick(0) {}
+    current_tick(0),
+    goalKeeperId(-1),
+    forwardId(-1),
+    halfBackId(-1){
+        
+    }
 
     ~Simulation() {}
 
     void
     init(const Game &g, const Rules &rul, const RoleParameters &goalKeeper, const vector<RoleParameters> &forwards);
 
-    void tick(shared_ptr<TreeNode> parent);
+    void tick(shared_ptr<TreeNode> parent, int calcAttempt);
 
     inline bool isInited() const { return inited; };
 

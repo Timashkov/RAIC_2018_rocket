@@ -11,7 +11,7 @@
 #include "utils.h"
 #include <memory>
 
-const int DEPTH = 50;
+const int DEPTH = 60;
 
 void Simulation::init(const Game &g, const Rules &rul, const RoleParameters &goalKeeper,
                       const vector<RoleParameters> &forwards) {
@@ -20,6 +20,18 @@ void Simulation::init(const Game &g, const Rules &rul, const RoleParameters &goa
 
     this->goalKeeperId = goalKeeper.robotId;
     this->defaultGoalKeeperPosition = goalKeeper.anchorPoint;
+    this->defaultForwardPosition = Vec3(0,1,0);
+    this->defaultHalfBackPosition = Vec3(0,1, -rul.arena.depth/4);
+    for (const Robot &r: g.robots){
+        if (r.is_teammate && r.id!= goalKeeper.robotId){
+            if(this->forwardId == -1){
+                this->forwardId = r.id;
+            } else {
+                this->halfBackId = r.id;
+            }
+        }
+        
+    }
 //    this->forwards = forwards;
 
     arena = rul.arena;
@@ -31,7 +43,7 @@ void Simulation::init(const Game &g, const Rules &rul, const RoleParameters &goa
 
     dumpNode(baseNode);
     inited = true;
-    goalTarget = Vec3(0, arena.goal_height / 2.0, arena.depth / 2.0);
+    goalTarget = Vec3(0, arena.goal_height / 2.0, arena.depth / 2.0 + rul.BALL_RADIUS);
 }
 
 void Simulation::setInitialState(const Game &g, State &st) {
@@ -68,8 +80,9 @@ void Simulation::setTick(const Game &g) {
     current_tick = g.current_tick;
     if (baseNode->state.current_tick != current_tick) {
         cout << "SetTick " << current_tick << endl;
-        for (const shared_ptr<TreeNode> &tn: baseNode->children) {
             cout << "Try child" << endl;
+        if (baseNode->children.size()>0){
+            shared_ptr<TreeNode> &tn = baseNode->children[baseNode->children.size()-1];
             if (tn->state.current_tick == current_tick &&
                 tn->state.ball.position == Vec3(g.ball.x, g.ball.y, g.ball.z)) {
                 adjustRobotsPositions(g.robots);
@@ -88,13 +101,13 @@ void Simulation::setTick(const Game &g) {
 
         setRobotsParameters(baseNode, g);
         cout << "Start sim" << endl;
-        tick(baseNode);
+        tick(baseNode, 1);
 
-        if (baseNode->state.bounty < 10) {
+//        if (baseNode->state.bounty < 10) {
             cout << "###################" << endl << "### bounty " << baseNode->state.bounty << endl
                  << "###################" << endl;
             checkAlternatives(baseNode);
-        }
+//        }
     }
 
 }
@@ -124,7 +137,7 @@ void Simulation::setRobotsParameters(const shared_ptr<TreeNode> &node, const Gam
 }
 
 
-void Simulation::tick(shared_ptr<TreeNode> parent) {
+void Simulation::tick(shared_ptr<TreeNode> parent, int calcAttempt) {
     double delta_time = 1.0 / rules.TICKS_PER_SECOND;
     double micro_dt = delta_time / rules.MICROTICKS_PER_TICK;
 
@@ -133,11 +146,13 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
 
     for (SimulationEntity &rob: st.robots) {
         if (rob.teammate) {
-            rob.action = resolveTargetAction(rob, parent.get(), 0);
+            rob.action = resolveTargetAction(rob, parent.get(), calcAttempt);
         }
     }
-
-    if (st.current_tick > DEPTH + current_tick || !st.ball_collision.empty() || st.bounty < -50) {
+    
+    if (st.current_tick > DEPTH + current_tick || !st.ball_collision.empty() || st.bounty < -50 || st.bounty> 50
+        || st.ball.position.getZ()> rules.arena.depth/2+rules.BALL_RADIUS
+        ||st.ball.position.getZ()< -rules.arena.depth/2+rules.BALL_RADIUS) {
         return;
     }
 
@@ -165,7 +180,7 @@ void Simulation::tick(shared_ptr<TreeNode> parent) {
     if (!processingNodes.empty()) {
         shared_ptr<TreeNode> tn = processingNodes.front();
         processingNodes.pop();
-        tick(tn);
+        tick(tn,calcAttempt);
     }
 }
 
@@ -310,7 +325,7 @@ void Simulation::truncTree(shared_ptr<TreeNode> tn) {
 void Simulation::simulateNextSteps(shared_ptr<TreeNode> base) {
 
     if (base->children.empty()) {
-        tick(base);
+        tick(base, 0);
         return;
     }
 
@@ -362,12 +377,9 @@ bool Simulation::isBallDirectionToGoal(const SimulationEntity &ball, bool myGoal
 }
 
 Action Simulation::resolveTargetAction(const SimulationEntity &robot, const TreeNode *parentNode, int calcAttempt) {
-    cout << "Resolve action for " << robot.id << "parent node childs " << parentNode->children.size() << endl;
-
     SimulationEntity ball = parentNode->state.ball;
 
-    if (robot.id == goalKeeperId && (ball.velocity.getZ() >= 0 || ball.position.getZ() >= 0)) {
-        cout << "resolve for goalkeeper" << endl;
+    if (robot.id == goalKeeperId && (ball.velocity.getZ() >= 0 || ball.position.getZ() >= -rules.arena.depth/4)) {
         Action act;
         act.jump_speed = 0.0;
         act.use_nitro = false;
@@ -382,71 +394,99 @@ Action Simulation::resolveTargetAction(const SimulationEntity &robot, const Tree
     if (calcAttempt == 0) {
 
         //attacker goes to ball position
-        cout << "Goal Target " << goalTarget.toString() << endl;
-        cout << "Ball position " << ball.position.toString() << endl;
-
         Vec3 goalDirection = goalTarget - ball.position;
         Vec3 ball_dan_norm = (engine->dan_to_arena(ball.position)).normal;
 
         Vec3 checkPoint = ball.position - ((goalDirection.normalized() - ball_dan_norm) * (robot.radius + ball.radius));
 
-        cout << " Check point " << checkPoint.toString() << " parentNode tick: " << parentNode->state.current_tick
-             << endl;
-
-
-        Vec3 target = robot.position - ((robot.position - checkPoint).normalized() * (robot.radius + ball.radius));
+//        Vec3 target = robot.position - ((robot.position - checkPoint).normalized() * (robot.radius + ball.radius));
+        Vec3 target = ((checkPoint - robot.position).normalized() * (robot.radius + ball.radius)) + checkPoint;
         double distance = (ball.position - robot.position).len();
-
-        cout << "New target: " << target.toString() << endl;
-        cout << "Current velocity " << robot.velocity.len() << endl;
-        cout << "Current position " << robot.position.toString() << endl;
-        cout << "Distance: " << distance << endl;
 
         Action act;
         act.jump_speed = (distance < 3.5) ? rules.ROBOT_MAX_JUMP_SPEED : 0.0;
         act.use_nitro = false;
         Vec3 del = (target - robot.position).normalized() * rules.ROBOT_MAX_GROUND_SPEED;
-        cout << "Target velocity " << del.len() << endl;
+        act.target_velocity_x = del.getX();
+        act.target_velocity_y = del.getY();
+        act.target_velocity_z = del.getZ();
+        return act;
+
+    }else if (calcAttempt == 1){
+        //attacker goes to ball position
+        cout << "Goal Target " << goalTarget.toString() << endl;
+       
+        
+        Vec3 goalDirection = goalTarget - ball.position;
+        goalDirection.setY(0);
+        Vec3 ball_dan_norm = (engine->dan_to_arena(ball.position)).normal;
+        
+        Vec3 bp = ball.position;
+        bp.setY(1);
+        cout << "Goal Direction " << goalDirection.toString() << endl;
+        cout << "Ball position " << bp.toString() << endl;
+        Vec3 checkPoint = bp - (goalDirection.normalized() * (robot.radius + ball.radius));
+        
+        cout << " Check point " << checkPoint.toString() << " parentNode tick: " << parentNode->state.current_tick
+        << endl;
+        
+        
+        Vec3 target = ((checkPoint - robot.position).normalized() * (robot.radius + ball.radius)) + checkPoint;
+        double distance = (bp - robot.position).len();
+        
+        cout << "New target: " << target.toString() << endl;
+        cout << "Current velocity " << robot.velocity.toString()<< " len "<< robot.velocity.len() << endl;
+        cout << "Current position " << robot.position.toString() << endl;
+        cout << "Distance: " << distance << endl;
+        
+        Action act;
+        act.jump_speed = 0.0;
+        act.use_nitro = false;
+        Vec3 del = (target - robot.position).normalized() * rules.ROBOT_MAX_GROUND_SPEED;
+        cout << "Target velocity " << del.toString() << " len " <<del.len() << endl;
         act.target_velocity_x = del.getX();
         act.target_velocity_y = del.getY();
         act.target_velocity_z = del.getZ();
         cout << endl;
         return act;
-
     } else /*if (calcAttempt == 3)*/{
-        cout << "Goal Target " << goalTarget.toString() << endl;
+        
+        
+        
+        //attacker goes to ball position
         cout << "Ball position " << ball.position.toString() << endl;
-
+        
         Vec3 goalDirection = goalTarget - ball.position;
-        Vec3 ball_dan_norm = (engine->dan_to_arena(ball.position)).normal;
-
-        Vec3 checkPoint = ball.position - ((goalDirection.normalized() - ball_dan_norm) * (robot.radius + ball.radius));
-
-        cout << " Check point " << checkPoint.toString() << " parentNode tick: " << parentNode->state.current_tick
-             << endl;
-
-
-        Vec3 target = robot.position - ((robot.position - checkPoint).normalized() * (ball.radius));
-        double distance = (ball.position - robot.position).len();
-
+        Dan ball_dan_norm = engine->dan_to_arena(ball.position);
+        
+        Vec3 plainBallPosition = ball.position;
+        plainBallPosition.setY(0.0);
+        
+        Vec3 checkPoint = ball.position - (goalDirection.normalized() * (2 * ball.radius)) - (ball_dan_norm.normal*(ball_dan_norm.distance - robot.radius) );
+        
+        cout << "Check point " << checkPoint.toString() << " parentNode tick: " << parentNode->state.current_tick
+        << endl;
+        
+        Vec3 target = checkPoint;
+        //robot.position - ((robot.position - checkPoint).normalized() * (robot.radius + ball.radius));
+        double distance = (plainBallPosition - robot.position).len();
+        
         cout << "New target: " << target.toString() << endl;
         cout << "Current velocity " << robot.velocity.len() << endl;
         cout << "Current position " << robot.position.toString() << endl;
         cout << "Distance: " << distance << endl;
-
+        
         Action act;
-        act.jump_speed = (distance < 3.5) ? rules.ROBOT_MAX_JUMP_SPEED : 0.0;
+        act.jump_speed = (distance < 3.1) ? rules.ROBOT_MAX_JUMP_SPEED : 0.0;
         act.use_nitro = false;
-        Vec3 del = target - robot.position;
-        cout << "Target velocity " << del.len() << endl;
-        act.target_velocity_x = 0;
-        act.target_velocity_y = 0;
-        act.target_velocity_z = 0;
+        Vec3 del = (target - robot.position).normalized() * rules.ROBOT_MAX_GROUND_SPEED;
+        cout << "Target velocity: " <<del.toString()<< " len:"<< del.len() << endl;
+        act.target_velocity_x = del.getX();
+        act.target_velocity_y = del.getY();
+        act.target_velocity_z = del.getZ();
         cout << endl;
         return act;
     }
-
-
 
     // TODO::
     return Action();
@@ -454,4 +494,52 @@ Action Simulation::resolveTargetAction(const SimulationEntity &robot, const Tree
 
 void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
 
+    vector<double> jumppos = vector<double>{1.29, 1.53, 1.75, 1.98, 2.19, 2.33, 2.58, 2.78, 2.96, 3.13, 3.29, 3.44, 3.59, 3.72};
+    //
+    int bounty = baseNode->state.bounty;
+    
+//    tick(baseNode, 1);
+    int id = -1;
+    double lenn = 1000;
+    TreeNode* tn = baseNode.get();
+    while( tn->children.size() > 0 && lenn > rules.BALL_RADIUS + rules.ROBOT_RADIUS){
+        for(SimulationEntity &se: tn->state.robots){
+            if (se.teammate && se.id != goalKeeperId){
+                Vec3 rp = se.position;
+                Vec3 bp = tn->state.ball.position;
+                rp.setY(1);
+                bp.setY(1);
+                lenn = (rp-bp).len();
+                id = se.id;
+            }
+        }
+        tn = tn->children[tn->children.size()-1].get();
+    }
+    
+    if (tn->parent != NULL){
+        tn = tn->parent;
+        
+        // found last node before collision node
+        cout<< "Tick "<<tn->state.current_tick<< "ball y:" << tn->state.ball.position.getY()<< endl;
+        int i = 0;
+        for (; i< jumppos.size(); i++){
+            if (jumppos[i]>tn->state.ball.position.getY())
+                break;
+        }
+        
+        for (SimulationEntity & rob: tn->state.robots){
+            if (rob.id == id){
+                rob.action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED;
+            }
+        }
+        
+        for (i; i>0 && tn->parent!=NULL; i--){
+            tn= tn->parent;
+        }
+        for (SimulationEntity & rob: tn->state.robots){
+            if (rob.id == id){
+                rob.action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED;
+            }
+        }
+    }
 }
