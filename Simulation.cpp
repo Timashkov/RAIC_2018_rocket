@@ -507,12 +507,11 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
             if (se.teammate ) {
                 Vec3 rp = se.position;
                 Vec3 hitPosition = getHitPosition(tn->state.ball.position);
-                
-                int achievement_tick = checkAchievement(se, hitPosition, tn->state.current_tick - current_tick + 1);
+                cout<<"HitPosition "<<hitPosition.toString()<<endl;
+                int achievement_tick = checkAchievement(se, hitPosition, tn->state.current_tick - current_tick );
                 if (achievement_tick != -1){
                     attackerId = se.id;
-                    attackerTarget = (hitPosition - se.position);
-                    
+                    attackerTarget = hitPosition;
                     break;
                 }
                
@@ -525,6 +524,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         tn = tn->children[tn->children.size() - 1].get();
     }
     
+    cout<< "found achievement"<< tn->state.current_tick<<endl;
     if (attackerId == goalKeeperId){
         for ( const SimulationEntity &se: baseNode->state.robots){
             if (se.teammate && se.id != attackerId){
@@ -540,7 +540,8 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         tn = tn->parent;
 
         // found last node before collision node
-        cout << "Tick " << tn->state.current_tick << "ball y:" << tn->state.ball.position.getY() << endl;
+        cout << "Tick " << tn->state.current_tick << endl;
+        cout <<"ball y:" << tn->state.ball.position.getY() << endl;
         int i = 0;
         for (; i < jumppos.size(); i++) {
             if (jumppos[i] > tn->state.ball.position.getY())
