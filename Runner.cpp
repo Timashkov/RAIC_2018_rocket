@@ -7,7 +7,64 @@
 using namespace model;
 using namespace std;
 
-void testRun1(){
+void checkAchievement(SimulationEntity &ballSe, SimulationEntity &rr1, Rules *rules) {
+    double delta_time = 1.0 / 6000.0;
+
+    int first_attempt = 50;
+
+    Vec3 bptarget = ballSe.position + ballSe.velocity * first_attempt * delta_time * 100;
+
+    cout << "Bparget " << bptarget.toString() << endl;
+    cout << delta_time << endl;
+
+    Vec3 initial_delta = ballSe.position - rr1.position;
+    Vec3 action_target_velocity = (bptarget - rr1.position);
+    action_target_velocity = action_target_velocity.normalized() * rules->ROBOT_MAX_GROUND_SPEED;
+
+    cout << "initial delta : " << initial_delta.len() << endl;
+    cout << "Action tv" << action_target_velocity.toString() << " len " << action_target_velocity.len() << endl;
+
+    for (int i = 0; i < first_attempt; i++) {
+        for (int j = 0; j < 100; j++) {
+            Vec3 target_velocity = clamp(action_target_velocity, rules->ROBOT_MAX_GROUND_SPEED);
+            target_velocity = target_velocity - (rr1.touch_normal * dot(rr1.touch_normal, target_velocity));
+            Vec3 target_velocity_change = target_velocity - rr1.velocity;
+
+            if (target_velocity_change.len() > 0.0) {
+
+                double acceleration = rules->ROBOT_ACCELERATION * max(0.0, rr1.touch_normal.getY());
+                rr1.velocity = rr1.velocity + clamp(target_velocity_change.normalized() * acceleration * delta_time,
+                                                    target_velocity_change.len());
+            }
+
+            rr1.velocity = clamp(rr1.velocity, rules->MAX_ENTITY_SPEED);
+            rr1.position = rr1.position + rr1.velocity * delta_time;
+        }
+
+        cout << "vel " << rr1.velocity.toString() << " vel " << rr1.velocity.len() << endl;
+        cout << "pos " << rr1.position.toString() << endl;
+        cout << "delta : " << (rr1.position - bptarget).len() << " on tick " << i << endl;
+
+    }
+
+    cout << "delta : " << (rr1.position - bptarget).len() << endl;
+}
+
+void blabla(Ball ball, Robot r1, Rules *rules) {
+    SimulationEntity se;
+    se.velocity = Vec3(ball.velocity_x, ball.velocity_y, ball.velocity_z);
+    se.position = Vec3(ball.x, ball.y, ball.z);
+
+    SimulationEntity rob;
+    rob.velocity = Vec3(r1.velocity_x, r1.velocity_y, r1.velocity_z);
+    rob.touch_normal = Vec3(r1.touch_normal_x, r1.touch_normal_y, r1.touch_normal_z);
+    rob.position = Vec3(r1.x, r1.y, r1.z);
+
+    checkAchievement(se, rob, rules);
+}
+
+
+void testRun1() {
     Simulation sim;
     unique_ptr<Game> game(new Game());
     unique_ptr<Rules> rules(new Rules());
@@ -35,24 +92,24 @@ void testRun1(){
     rules->ROBOT_RADIUS = 1.0;
     rules->ROBOT_MASS = 2.0;
     rules->TICKS_PER_SECOND = 60;
-    rules->MICROTICKS_PER_TICK= 100;
-    rules->RESET_TICKS=120;
-    rules->BALL_ARENA_E=0.7;
-    rules->BALL_RADIUS=2.0;
-    rules->BALL_MASS=1.0;
-    rules->MIN_HIT_E=0.4;
-    rules->MAX_HIT_E=0.5;
-    rules->MAX_ENTITY_SPEED=100.0;
-    rules->MAX_NITRO_AMOUNT=100.0;
-    rules->START_NITRO_AMOUNT=50.0;
-    rules->NITRO_POINT_VELOCITY_CHANGE=0.6;
-    rules->NITRO_PACK_X=20.0;
-    rules->NITRO_PACK_Y=1.0;
-    rules->NITRO_PACK_Z=30.0;
-    rules->NITRO_PACK_RADIUS=0.5;
-    rules->NITRO_PACK_AMOUNT=100.0;
-    rules->NITRO_PACK_RESPAWN_TICKS=600;
-    rules->GRAVITY=30.0;
+    rules->MICROTICKS_PER_TICK = 100;
+    rules->RESET_TICKS = 120;
+    rules->BALL_ARENA_E = 0.7;
+    rules->BALL_RADIUS = 2.0;
+    rules->BALL_MASS = 1.0;
+    rules->MIN_HIT_E = 0.4;
+    rules->MAX_HIT_E = 0.5;
+    rules->MAX_ENTITY_SPEED = 100.0;
+    rules->MAX_NITRO_AMOUNT = 100.0;
+    rules->START_NITRO_AMOUNT = 50.0;
+    rules->NITRO_POINT_VELOCITY_CHANGE = 0.6;
+    rules->NITRO_PACK_X = 20.0;
+    rules->NITRO_PACK_Y = 1.0;
+    rules->NITRO_PACK_Z = 30.0;
+    rules->NITRO_PACK_RADIUS = 0.5;
+    rules->NITRO_PACK_AMOUNT = 100.0;
+    rules->NITRO_PACK_RESPAWN_TICKS = 600;
+    rules->GRAVITY = 30.0;
 
     game->ball = Ball();
     game->ball.x = 0.0;
@@ -62,26 +119,26 @@ void testRun1(){
     game->ball.velocity_y = 0.0;
     game->ball.velocity_z = 1.0;
     game->ball.radius = 2.0;
-    
+
     game->current_tick = 0;
     Robot r1 = Robot();
     r1.id = 1;
     r1.player_id = 0;
-    r1.x= 7.856392606191905;
-    r1.y =1.0;
-    r1.z=-18.39231076339711;
-    r1.velocity_x= -1.0;
-    r1.velocity_y= 0.0;
-    r1.velocity_z=0.0;
-    r1.radius =1.0;
-    r1.nitro_amount=0.0;
-    r1.touch_normal_x=0.0;
+    r1.x = 7.856392606191905;
+    r1.y = 1.0;
+    r1.z = -18.39231076339711;
+    r1.velocity_x = -1.0;
+    r1.velocity_y = 0.0;
+    r1.velocity_z = 0.0;
+    r1.radius = 1.0;
+    r1.nitro_amount = 0.0;
+    r1.touch_normal_x = 0.0;
     r1.touch_normal_y = 1.0;
-    r1.touch_normal_z=0.0;
+    r1.touch_normal_z = 0.0;
     r1.touch = true;
     r1.is_teammate = true;
     game->robots.push_back(r1);
-    
+
 //    Robot r2 = Robot();
 //    r2.id = 2;
 //    r2.player_id = 0;
@@ -141,57 +198,11 @@ void testRun1(){
 //    game->current_tick=1;
 //    sim.setTick(*game);
 
-    double delta_time = 1.0/6000.0;
-    
-    int first_attempt = 50;
-    Vec3 ball_velocity = Vec3(game->ball.velocity_x, game->ball.velocity_y, game->ball.velocity_z);
-    Vec3 ball_position = Vec3(game->ball.x, game->ball.y, game->ball.z);
 
-
-    Vec3 bptarget = ball_position + ball_velocity*first_attempt* delta_time*100;
-    cout<<"Bparget "<<bptarget.toString()<<endl;
-
-
-    cout<<delta_time<<endl;
-    SimulationEntity rr1;
-    rr1.velocity = Vec3(r1.velocity_x, r1.velocity_y, r1.velocity_z);
-    rr1.touch_normal = Vec3(r1.touch_normal_x, r1.touch_normal_y, r1.touch_normal_z);
-    rr1.position = Vec3(r1.x, r1.y,r1.z);
-    Vec3 initial_delta = ball_position-rr1.position;
-    Vec3 action_target_velocity = (bptarget - rr1.position);
-    cout<< "initial delta : "<< initial_delta.len()<<endl;
-    action_target_velocity = action_target_velocity.normalized()*rules->ROBOT_MAX_GROUND_SPEED;
-    cout<<"Action tv"<<action_target_velocity.toString()<<" len "<< action_target_velocity.len()<< endl;
-    for (int i = 0; i < first_attempt; i++){
-        for (int j = 0; j < 100; j++){
-            Vec3 target_velocity = clamp(action_target_velocity, rules->ROBOT_MAX_GROUND_SPEED);
-            target_velocity = target_velocity - (rr1.touch_normal * dot(rr1.touch_normal, target_velocity));
-            Vec3 target_velocity_change = target_velocity - rr1.velocity;
-
-//            cout<<"target_velocity_change "<<target_velocity_change.toString()<<endl;
-            if (target_velocity_change.len() > 0.0) {
-
-                double acceleration = rules->ROBOT_ACCELERATION * max(0.0, rr1.touch_normal.getY());
-                rr1.velocity = rr1.velocity + clamp(target_velocity_change.normalized() * acceleration * delta_time,
-                                                    target_velocity_change.len());
-            }
-
-            rr1.velocity = clamp(rr1.velocity, rules->MAX_ENTITY_SPEED);
-
-            rr1.position = rr1.position + rr1.velocity * delta_time;
-
-//            cout<<"--"<<(rr1.velocity * delta_time).toString()<<endl;
-        }
-        cout<< "vel "<<rr1.velocity.toString() <<" vel "<<rr1.velocity.len()<<endl;
-        cout<< "pos "<<rr1.position.toString() <<endl;
-        cout<< "delta : "<< (rr1.position - bptarget).len()<<" on tick "<<i<<endl;
-
-    }
-    
-    cout<< "delta : "<< (rr1.position - bptarget).len()<<endl;
+    blabla(game->ball, r1, rules.get());
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 //    if (argc == 4) {
 //        Runner runner(argv[1], argv[2], argv[3]);
 //        runner.run();
@@ -199,13 +210,13 @@ int main(int argc, char* argv[]) {
 //        Runner runner("127.0.0.1", "31001", "0000000000000000");
 //        runner.run();
 //    }
-    
-        testRun1();
+
+    testRun1();
     return 0;
 }
 
-Runner::Runner(const char* host, const char* port, const char* token)
-: remoteProcessClient(host, atoi(port)), token(token) {
+Runner::Runner(const char *host, const char *port, const char *token)
+        : remoteProcessClient(host, atoi(port)), token(token) {
 }
 
 void Runner::run() {
@@ -216,7 +227,7 @@ void Runner::run() {
     unique_ptr<Rules> rules = remoteProcessClient.read_rules();
     while ((game = remoteProcessClient.read_game()) != nullptr) {
         actions.clear();
-        for (const Robot& robot : game->robots) {
+        for (const Robot &robot : game->robots) {
             if (robot.is_teammate) {
                 strategy->act(robot, *rules, *game, actions[robot.id]);
             }
