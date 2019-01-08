@@ -94,8 +94,10 @@ private:
     int current_tick;
 
     int goalKeeperId;
-    int forwardId;
-    int halfBackId;
+
+    int attackerId;
+    Vec3 attackerTarget;
+    
     Vec3 defaultHalfBackPosition;
     Vec3 defaultForwardPosition;
     Vec3 defaultGoalKeeperPosition;
@@ -115,10 +117,9 @@ public:
     defaultHalfBackPosition(Vec3::None),
     defaultForwardPosition(Vec3::None),
     goalTarget(Vec3::None),
+    attackerTarget(Vec3::None),
     current_tick(0),
-    goalKeeperId(-1),
-    forwardId(-1),
-    halfBackId(-1){
+    goalKeeperId(-1){
         
     }
 
@@ -156,6 +157,10 @@ public:
     Action resolveTargetAction(const SimulationEntity& robot, const TreeNode* parentNode, int calcAttempt);
 
     void checkAlternatives(shared_ptr<TreeNode> baseNode);
+    
+    int checkAchievement(SimulationEntity &rr1, Vec3 bptarget, int max_attempts);
+    
+    Vec3 getHitPosition(Vec3 ball_moment_position);
 };
 
 #endif /* Simulation_h */
