@@ -45,7 +45,7 @@ public:
 
 class State {
 public:
-    State() : bounty(0) {};
+    State() : current_tick(0),bounty(0) {};
 
     State(const State &source) :
             ball(source.ball),
@@ -162,7 +162,7 @@ public:
 
     void checkAlternatives(shared_ptr<TreeNode> baseNode);
     
-    int checkAchievement(SimulationEntity &rr1, Vec3 bptarget, int max_attempts);
+    int checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_attempts);
     
     Vec3 getHitPosition(Vec3 ball_moment_position);
 };

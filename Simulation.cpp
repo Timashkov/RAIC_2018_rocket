@@ -71,6 +71,7 @@ void Simulation::setTick(const Game &g) {
     if (baseNode->state.current_tick != current_tick) {
         cout << "SetTick " << current_tick << endl;
         if (baseNode->children.size() > 0) {
+            cout << "Call known nodes"<<endl;
             shared_ptr<TreeNode> &tn = baseNode->children[baseNode->children.size() - 1];
 
             if (tn->state.current_tick == current_tick &&
@@ -82,18 +83,20 @@ void Simulation::setTick(const Game &g) {
             }
         }
 
-        std::cout << "Simulation wrong: " << current_tick << std::endl;
+        cout << "Simulation wrong: " << current_tick << endl;
 
         attackerId = -1;
         baseNode->children.clear();
         baseNode->state.ball.setPosition(g.ball.x, g.ball.y, g.ball.z);
         baseNode->state.ball.setVelocity(g.ball.velocity_x, g.ball.velocity_y, g.ball.velocity_z);
+        cout<< "Set ball position "<<baseNode->state.ball.position.toString() << " and velocity "<< baseNode->state.ball.velocity.toString()<<endl;
         baseNode->state.current_tick = g.current_tick;
 
         setRobotsParameters(baseNode, g);
         cout << "Start sim" << endl;
         tickForBall(baseNode);
         checkAlternatives(baseNode);
+        cout << "After check alternatives " << current_tick<< baseNode->state.current_tick << endl;
     }
 
 }
@@ -414,7 +417,7 @@ Action Simulation::resolveTargetAction(const SimulationEntity &robot, const Tree
     } else if (calcAttempt == 1 && robot.id == attackerId) {
         //attacker goes to ball position
 
-        cout << " Hit position " << attackerTarget.toString() << " parentNode tick: " << parentNode->state.current_tick
+        cout << " Go 2 position " << attackerTarget.toString() << " parentNode tick: " << parentNode->state.current_tick
              << endl;
 
         Vec3 target = attackerTarget;
@@ -480,11 +483,14 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
 
     int required_tick = -1;
     TreeNode *tn = baseNode.get();
+    cout<<"Check alternatives for node "<< baseNode->state.current_tick <<endl;
     while (tn->children.size() > 0) {
+        Vec3 hitPosition = getHitPosition(tn->state.ball.position);
+        cout<< "Hit position "<< hitPosition.toString() << " for tick "<<tn->state.current_tick << endl;
+        
         for (SimulationEntity &se: tn->state.robots) {
             if (se.teammate) {
                 Vec3 rp = se.position;
-                Vec3 hitPosition = getHitPosition(tn->state.ball.position);
                 int achievement_tick = checkAchievement(se, hitPosition, tn->state.current_tick - current_tick);
                 if (achievement_tick != -1) {
                     cout << " Check achievement with current tick " << current_tick << " and will be on "
@@ -495,7 +501,6 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     attackerTarget = hitPosition;
                     break;
                 }
-
             }
         }
         if (attackerId != -1) {
@@ -505,7 +510,6 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         tn = tn->children[tn->children.size() - 1].get();
     }
 
-    cout << "found achievement" << tn->state.current_tick << endl;
     if (attackerId == goalKeeperId) {
         for (const SimulationEntity &se: baseNode->state.robots) {
             if (se.teammate && se.id != attackerId) {
@@ -524,6 +528,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
     }
 
     if (tn->parent != NULL && attackerId != -1) {
+        cout << "found achievement" << tn->state.current_tick << endl;
         tn = tn->parent;
 
         // found last node before collision node
@@ -553,7 +558,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
     }
 }
 
-int Simulation::checkAchievement(SimulationEntity &rr1, Vec3 bptarget, int max_attempts) {
+int Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_attempts) {
     double delta_time = 1.0 / 6000.0;
 
     Vec3 initial_delta = bptarget - rr1.position;
@@ -572,7 +577,7 @@ int Simulation::checkAchievement(SimulationEntity &rr1, Vec3 bptarget, int max_a
             break;
         }
         distance_initial = distance_after;
-        cout << "Before move p=" << rr1.position.toString() << "  v=" << rr1.velocity.toString() << endl;
+//        cout << "Before move p=" << rr1.position.toString() << "  v=" << rr1.velocity.toString() << endl;
         for (int j = 0; j < 100; j++) {
             engine->moveRobot(rr1, delta_time);
 
@@ -584,13 +589,12 @@ int Simulation::checkAchievement(SimulationEntity &rr1, Vec3 bptarget, int max_a
                 rr1.touch_normal = collision_normal;
             }
         }
-        cout << "After move p=" << rr1.position.toString() << "  v=" << rr1.velocity.toString() << endl;
+//        cout << "After move p=" << rr1.position.toString() << "  v=" << rr1.velocity.toString() << endl;
 
         step++;
         distance_after = (rr1.position - bptarget).len();
-        cout << "Distance on step " << step << " is " << distance_after << endl;
+//        cout << "Distance on step " << step << " is " << distance_after << endl;
     }
-    step--;
 
     if (max_attempts >= step)
         return step;
