@@ -130,11 +130,15 @@ public:
 
     void tick(shared_ptr<TreeNode> parent, int calcAttempt);
 
+    void tickForBall(shared_ptr<TreeNode> parent);
+
     inline bool isInited() const { return inited; };
 
     void setTick(const Game &g);
 
     void update(shared_ptr<TreeNode> &node, double delta_time);
+
+    void updateForBall(shared_ptr<TreeNode> &node, double delta_time);
 
     void dumpNode(shared_ptr<TreeNode> node);
 

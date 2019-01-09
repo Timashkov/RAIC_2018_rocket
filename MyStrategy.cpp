@@ -37,15 +37,11 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
 
     if (!sim.isInited()) {
         sim.init(game, rules, goalKeeper, forwards);
-//        sim.start();
     }
     sim.setTick(game);
 
-    dumpTick(game);
-
-    dumpRobot(me, "me");
-
     if (!me.touch) {
+        cout<< " Robot " << me.id << " not on the ground"<< endl;
         action.target_velocity_x = 0.0;
         action.target_velocity_y = -rules.MAX_ENTITY_SPEED;
         action.target_velocity_z = 0.0;
@@ -54,71 +50,15 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
         return;
     }
 
-    //    unique_ptr<BallExtended> ballExtended(new BallExtended(game.ball));
-
     for (SimulationEntity &se : sim.getBaseNode()->state.robots) {
         if (se.id == me.id) {
-//            cout<< "move robot "<< me.id << "  on tick "<< sim.getBaseNode()->state.current_tick << endl;
+            cout << " Robot " << me.id << "Position " << me.x << ":" << me.y << ":" << me.z << " action "
+                 << se.action.target_velocity_x << ":"
+                 << se.action.target_velocity_y << ":" << se.action.target_velocity_z << ":" << se.action.jump_speed
+                 << endl;
             action = se.action;
             return;
         }
     }
-    
 }
 
-void MyStrategy::actAsGoalKeeper(const Robot &me, const Rules &rules, const Game &game, Action &action) {
-
-}
-
-void MyStrategy::actAsForward(const Robot &me, const Rules &rules, const Game &game, Action &action) {
-
-}
-
-
-void MyStrategy::dumpRobot(const model::Robot &r, const char *caption) {
-    std::stringstream ss;
-    ss << " ROBOT: id: *" << r.id << "* caption:" << caption << "* ";
-    ss << " player_id: *" << r.player_id << "*";
-    ss << " is_teammate: *" << r.is_teammate << "*";
-    ss << " coord: (" << r.x << ";" << r.y << ":" << r.z << ")";
-    ss << " velocity: (" << r.velocity_x << ";" << r.velocity_y << ";" << r.velocity_z << ")";
-    ss << " radius:" << r.radius;
-    ss << " nitro:" << r.nitro_amount;
-    ss << " touch:" << r.touch;
-    ss << " touch_normal: x:" << r.touch_normal_x << "Y:" << r.touch_normal_y << "z:" << r.touch_normal_z << std::endl;
-    writeLog(ss);
-}
-
-void MyStrategy::dumpAction(const model::Action &act) {
-    std::stringstream ss;
-    ss << " Action:target:(" << act.target_velocity_x << ";" << act.target_velocity_y << ";" << act.target_velocity_z
-       << ")";
-    ss << "jump_speed = " << act.jump_speed << " ; use_nitro" << act.use_nitro << ";" << std::endl;
-    writeLog(ss);
-}
-
-
-void MyStrategy::dumpTick(const model::Game &game) {
-
-    std::stringstream ss;
-    ss << " tick : " << game.current_tick << endl;
-    ss << " BALL radius:" << game.ball.radius;
-    ss << " coord:(" << game.ball.x << ";" << game.ball.y << ";" << game.ball.z << ")";
-    ss << " velocity:(" << game.ball.velocity_x << ";" << game.ball.velocity_y << ";" << game.ball.velocity_z << ")"
-       << std::endl;
-
-    for (Robot r: game.robots) {
-        ss << " ROBOT: id: *" << r.id << "* " << "* ";
-        ss << " player_id: *" << r.player_id << "*";
-        ss << " is_teammate: *" << r.is_teammate << "*";
-        ss << " coord: (" << r.x << ";" << r.y << ":" << r.z << ")";
-        ss << " velocity: (" << r.velocity_x << ";" << r.velocity_y << ";" << r.velocity_z << ")";
-        ss << " radius:" << r.radius;
-        ss << " nitro:" << r.nitro_amount;
-        ss << " touch:" << r.touch;
-        ss << " touch_normal: x:" << r.touch_normal_x << "Y:" << r.touch_normal_y << "z:" << r.touch_normal_z
-           << std::endl;
-    }
-
-    writeLog(ss);
-}

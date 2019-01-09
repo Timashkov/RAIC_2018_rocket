@@ -20,16 +20,6 @@ public:
     ~MyStrategy(){}
     
     void act(const model::Robot& me, const model::Rules& rules, const model::Game& game, model::Action& action) override;
-    
-    void dumpAction(const model::Action& act);
-    
-    void dumpTick(const model::Game& game);
-
-    void dumpRobot(const model::Robot &r, const char * caption);
-    
-    void actAsGoalKeeper(const Robot &me, const Rules &rules, const Game &game, Action &action);
-    
-    void actAsForward(const Robot &me, const Rules &rules, const Game &game, Action &action);
 };
 
 #endif

@@ -40,7 +40,7 @@ public:
 
     Vec3 collide_with_arena(SimulationEntity &e);
 
-    void moveRobots(vector<SimulationEntity> &robots, double delta_time);
+    void moveRobot(SimulationEntity& robot, double delta_time);
 
     Dan dan_to_plane(Vec3 point, Vec3 point_on_plane, Vec3 plane_normal);
 
