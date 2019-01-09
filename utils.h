@@ -131,7 +131,7 @@ public:
     static Vec3 None;
 
     std::string toString() const {
-        string s = "(" + to_string(vec[0]) + ";" + to_string(vec[1]) + ";" + to_string(vec[2]) + ")";
+        string s = "(" + to_string(vec[0]) + ";" + to_string(vec[1]) + ";" + to_string(vec[2]) + ") size=" + to_string(len());
         return s;
     }
 };
