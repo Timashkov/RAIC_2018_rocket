@@ -6,7 +6,6 @@
 #define _MY_STRATEGY_H_
 
 #include "Strategy.h"
-#include "Extensions.h"
 #include "Simulation.h"
 #include "RoleParameters.h"
 

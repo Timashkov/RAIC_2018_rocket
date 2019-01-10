@@ -11,7 +11,6 @@
 
 #include <iostream>
 #include <memory>
-#include "Extensions.h"
 #include "model/Rules.h"
 #include "model/Game.h"
 #include "model/Robot.h"
@@ -21,6 +20,7 @@
 #include <queue>
 #include "SimulationEngine.h"
 
+using namespace model;
 
 class CollisionParams {
 public:
