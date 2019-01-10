@@ -20,8 +20,6 @@ void Simulation::init(const Game &g, const Rules &rul, const RoleParameters &goa
 
     this->goalKeeperId = goalKeeper.robotId;
     this->defaultGoalKeeperPosition = goalKeeper.anchorPoint;
-    this->defaultForwardPosition = Vec3(0, 1, 0);
-    this->defaultHalfBackPosition = Vec3(0, 1, -rul.arena.depth / 2);
 
     attackerId = -1;
 

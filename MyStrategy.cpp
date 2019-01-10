@@ -23,7 +23,7 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
                 k = r.id;
         }
         goalKeeper.robotId = k;
-        goalKeeper.anchorPoint = Vec3(0.0, 0.0, -(rules.arena.depth / 3.0));
+        goalKeeper.anchorPoint = Vec3(0.0, 0.0, -(rules.arena.depth / 2.0));
 
         for (Robot rr: game.robots) {
             if (rr.id != goalKeeper.robotId && rr.is_teammate) {
