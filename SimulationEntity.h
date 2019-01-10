@@ -12,7 +12,7 @@ class SimulationEntity {
 public:
     SimulationEntity() : position(0, 0, 0), velocity(0, 0, 0), touch_normal(Vec3::None),
                          radius(0), mass(0), radius_change_speed(0), teammate(false),
-                         touch(false), nitro(0), alive(false), respawn_ticks(0), arena_e(0.0) {}
+                         touch(false), nitro(0), alive(false), respawn_ticks(0), arena_e(0.0), action_set(false) {}
 
     ~SimulationEntity() {}
 
@@ -33,6 +33,7 @@ public:
     int id;
     int player_id;
     double arena_e;
+    bool action_set;
 
     inline void setPosition(Vec3 pos) {
         position.setX(pos.getX());

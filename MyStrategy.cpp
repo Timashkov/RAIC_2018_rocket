@@ -41,7 +41,7 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
     sim.setTick(game);
 
     if (!me.touch) {
-        cout<< " Robot " << me.id << " not on the ground"<< endl;
+//        cout<< " Robot " << me.id << " not on the ground"<< endl;
         action.target_velocity_x = 0.0;
         action.target_velocity_y = -rules.MAX_ENTITY_SPEED;
         action.target_velocity_z = 0.0;
@@ -52,10 +52,10 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
 
     for (SimulationEntity &se : sim.getBaseNode()->state.robots) {
         if (se.id == me.id) {
-            cout << " Robot " << me.id << "Position " << me.x << ":" << me.y << ":" << me.z << " action "
-                 << se.action.target_velocity_x << ":"
-                 << se.action.target_velocity_y << ":" << se.action.target_velocity_z << ":" << se.action.jump_speed
-                 << endl;
+//            cout << " Robot " << me.id << " Position " << me.x << ":" << me.y << ":" << me.z << " action "
+//                 << se.action.target_velocity_x << ":"
+//                 << se.action.target_velocity_y << ":" << se.action.target_velocity_z << ":" << se.action.jump_speed
+//                 << endl;
             action = se.action;
             return;
         }

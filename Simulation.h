@@ -98,8 +98,8 @@ private:
     int attackerId;
     Vec3 attackerTarget;
     
-    Vec3 defaultHalfBackPosition;
-    Vec3 defaultForwardPosition;
+//    Vec3 defaultHalfBackPosition;
+//    Vec3 defaultForwardPosition;
     Vec3 defaultGoalKeeperPosition;
     Vec3 goalTarget;
 
@@ -114,8 +114,8 @@ public:
     Simulation() :
     inited(false),
     defaultGoalKeeperPosition(Vec3::None),
-    defaultHalfBackPosition(Vec3::None),
-    defaultForwardPosition(Vec3::None),
+//    defaultHalfBackPosition(Vec3::None),
+//    defaultForwardPosition(Vec3::None),
     goalTarget(Vec3::None),
     attackerTarget(Vec3::None),
     current_tick(0),
@@ -162,7 +162,9 @@ public:
 
     void checkAlternatives(shared_ptr<TreeNode> baseNode);
     
-    int checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_attempts);
+    int checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 excludeTarget,int max_attempts);
+
+    Vec3 getEscapePosition(Vec3 ball_moment_position);
     
     Vec3 getHitPosition(Vec3 ball_moment_position);
 };
