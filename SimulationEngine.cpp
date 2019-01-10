@@ -41,14 +41,14 @@ bool SimulationEngine::collide_entities(SimulationEntity &a, SimulationEntity &b
 
 Vec3 SimulationEngine::collide_with_arena(SimulationEntity &e) {
 
-    Dan danArena = dan_to_arena(e.position);
-    double penetration = e.radius - danArena.distance;
+    e.danToArena = dan_to_arena(e.position);
+    double penetration = e.radius - e.danToArena.distance;
     if (penetration > 0.0) {
-        e.position = e.position + danArena.normal * penetration;
-        double velocity = dot(e.velocity, danArena.normal) - e.radius_change_speed;
+        e.position = e.position + e.danToArena.normal * penetration;
+        double velocity = dot(e.velocity, e.danToArena.normal) - e.radius_change_speed;
         if (velocity < 0.0) {
-            e.velocity = e.velocity - danArena.normal * velocity * (1.0 + e.arena_e);
-            return danArena.normal;
+            e.velocity = e.velocity - e.danToArena.normal * velocity * (1.0 + e.arena_e);
+            return e.danToArena.normal;
         }
     }
     return Vec3::None;

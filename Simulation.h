@@ -45,7 +45,7 @@ public:
 
 class State {
 public:
-    State() : current_tick(0),bounty(0) {};
+    State() : current_tick(0),bounty(0), ballHitPosition(Vec3::None) {};
 
     State(const State &source) :
             ball(source.ball),
@@ -56,6 +56,7 @@ public:
             robots_collision(source.robots_collision),
             ball_wall_collision(source.ball_wall_collision),
             distances(source.distances),
+            ballHitPosition(Vec3::None),
             bounty(0) {}
 
     ~State() {};
@@ -68,6 +69,7 @@ public:
     vector<CollisionParams> robots_collision;
     vector<Vec3> ball_wall_collision;
     int bounty;
+    Vec3 ballHitPosition;
     vector<double> distances;
 };
 
@@ -97,9 +99,7 @@ private:
 
     int attackerId;
     Vec3 attackerTarget;
-    
-//    Vec3 defaultHalfBackPosition;
-//    Vec3 defaultForwardPosition;
+
     Vec3 defaultGoalKeeperPosition;
     Vec3 goalTarget;
 
@@ -114,8 +114,6 @@ public:
     Simulation() :
     inited(false),
     defaultGoalKeeperPosition(Vec3::None),
-//    defaultHalfBackPosition(Vec3::None),
-//    defaultForwardPosition(Vec3::None),
     goalTarget(Vec3::None),
     attackerTarget(Vec3::None),
     current_tick(0),
@@ -128,15 +126,13 @@ public:
     void
     init(const Game &g, const Rules &rul, const RoleParameters &goalKeeper, const vector<RoleParameters> &forwards);
 
-    void tick(shared_ptr<TreeNode> parent, int calcAttempt);
-
     void tickForBall(shared_ptr<TreeNode> parent);
 
     inline bool isInited() const { return inited; };
 
     void setTick(const Game &g);
 
-    void update(shared_ptr<TreeNode> &node, double delta_time);
+//    void update(shared_ptr<TreeNode> &node, double delta_time);
 
     void updateForBall(shared_ptr<TreeNode> &node, double delta_time);
 
@@ -158,13 +154,9 @@ public:
 
     void setRobotsParameters(const shared_ptr<TreeNode> &node, const Game &g);
 
-    Action resolveTargetAction(const SimulationEntity& robot, const TreeNode* parentNode, int calcAttempt);
-
     void checkAlternatives(shared_ptr<TreeNode> baseNode);
     
     int checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 excludeTarget,int max_attempts);
-
-    Vec3 getEscapePosition(Vec3 ball_moment_position);
     
     Vec3 getHitPosition(Vec3 ball_moment_position);
 };

@@ -8,6 +8,17 @@
 #include "utils.h"
 #include "model/Action.h"
 
+class Dan {
+public:
+    Dan():distance(-1), normal(Vec3::None){}
+    Dan(double d, const Vec3 &n) : distance(d), normal(n) {}
+    
+    ~Dan() {}
+    
+    double distance;
+    Vec3 normal;
+};
+
 class SimulationEntity {
 public:
     SimulationEntity() : position(0, 0, 0), velocity(0, 0, 0), touch_normal(Vec3::None),
@@ -34,6 +45,8 @@ public:
     int player_id;
     double arena_e;
     bool action_set;
+
+    Dan danToArena;
 
     inline void setPosition(Vec3 pos) {
         position.setX(pos.getX());

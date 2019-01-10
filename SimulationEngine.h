@@ -14,16 +14,6 @@
 #include <iostream>
 #include <memory>
 
-class Dan {
-public:
-    Dan(double d, const Vec3 &n) : distance(d), normal(n) {}
-
-    ~Dan() {}
-
-    double distance;
-    Vec3 normal;
-};
-
 class SimulationEngine {
 private:
     model::Rules rules;
