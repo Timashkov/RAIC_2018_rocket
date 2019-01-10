@@ -603,34 +603,38 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         }
     } else {
 
-        Vec3 escape = Vec3::None;
-        while (tn->children.size() > 0) {
-            Vec3 hitPosition = getEscapePosition(tn->state.ball.position);
-//            cout << "Hit position " << hitPosition.toString() << " for tick " << tn->state.current_tick << endl;
-
-            for (SimulationEntity &se: tn->state.robots) {
-                if (se.teammate && se.id != goalKeeperId) {
-                    Vec3 rp = se.position;
-                    int achievement_tick = checkAchievement(se, hitPosition, tn->state.ball.position,
-                                                            tn->state.current_tick - current_tick);
-                    if (achievement_tick != -1) {
-//                        cout << " Check achievement with current tick " << current_tick << " and will be on "
-//                             << tn->state.current_tick << " achievement tick " << achievement_tick << endl;
-//                        cout << " For Attacker " << se.id << endl;
-                        collision_tick = current_tick + achievement_tick - 1;
-                        escape = hitPosition;
-                        break;
-                    }
-                }
-            }
-            if (escape != Vec3::None) {
-                break;
-            }
-
-            tn = tn->children[tn->children.size() - 1].get();
-        }
-
-        tn = baseNode.get();
+//        Vec3 escape = Vec3::None;
+//        int i = 0;
+//        while (tn->children.size() > 0) {
+//            i++;
+//            if (i < 10)
+//                continue;
+//            Vec3 hitPosition = getEscapePosition(tn->state.ball.position);
+////            cout << "Hit position " << hitPosition.toString() << " for tick " << tn->state.current_tick << endl;
+//
+//            for (SimulationEntity &se: tn->state.robots) {
+//                if (se.teammate && se.id != goalKeeperId) {
+//                    Vec3 rp = se.position;
+//                    int achievement_tick = checkAchievement(se, hitPosition, tn->state.ball.position,
+//                                                            tn->state.current_tick - current_tick);
+//                    if (achievement_tick != -1) {
+////                        cout << " Check achievement with current tick " << current_tick << " and will be on "
+////                             << tn->state.current_tick << " achievement tick " << achievement_tick << endl;
+////                        cout << " For Attacker " << se.id << endl;
+//                        collision_tick = current_tick + achievement_tick - 1;
+//                        escape = hitPosition;
+//                        break;
+//                    }
+//                }
+//            }
+//            if (escape != Vec3::None) {
+//                break;
+//            }
+//
+//            tn = tn->children[tn->children.size() - 1].get();
+//        }
+//
+//        tn = baseNode.get();
 
 
         TreeNode *childNode = tn->children[tn->children.size() - 1].get();
@@ -671,11 +675,13 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                 }
             } else {
 
-                Vec3 target = tn->state.ball.position;
-                target.setZ(target.getZ() - 2.0);
+                Vec3 target = defaultGoalKeeperPosition;
 
-                if (escape != Vec3::None)
-                    target = escape;
+                if (robot.position.getX() > 0) {
+                    target.setX(-rules.arena.width / 2);
+                } else {
+                    target.setX(rules.arena.width / 2);
+                }
 
 //                cout << " Default Go 2 ball " << target.toString() << " parentNode tick: "
 //                     << tn->state.current_tick
@@ -754,6 +760,9 @@ int Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 exclu
     double delta_time = 1.0 / 6000.0;
 
     Vec3 initial_delta = bptarget - rr1.position;
+    if (delta_time * 100 * rules.ROBOT_MAX_GROUND_SPEED * max_attempts < initial_delta.len()) {
+        return -1;
+    }
     Vec3 action_target_velocity = (bptarget - rr1.position);
     action_target_velocity = action_target_velocity.normalized() * rules.ROBOT_MAX_GROUND_SPEED;
 
