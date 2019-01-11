@@ -109,6 +109,7 @@ private:
     Rules rules;
     Arena arena;
     std::unique_ptr<SimulationEngine> engine;
+    double delta_time;
 
 public:
     Simulation() :
@@ -117,7 +118,8 @@ public:
     goalTarget(Vec3::None),
     attackerTarget(Vec3::None),
     current_tick(0),
-    goalKeeperId(-1){
+    goalKeeperId(-1),
+    delta_time(0.0){
         
     }
 
@@ -135,8 +137,6 @@ public:
 //    void update(shared_ptr<TreeNode> &node, double delta_time);
 
     void updateForBall(shared_ptr<TreeNode> &node, double delta_time);
-
-    void dumpNode(shared_ptr<TreeNode> node);
 
     void adjustRobotsPositions(const vector<Robot> &rs);
 
