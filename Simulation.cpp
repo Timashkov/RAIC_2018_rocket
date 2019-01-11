@@ -358,7 +358,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         for (SimulationEntity &se: tn->state.robots) {
             if (se.teammate &&
                 se.touch &&
-                se.position.getZ()-1 < tn->state.ball.position.getZ() &&
+                se.position.getZ() - 1 < tn->state.ball.position.getZ() &&
                 (((tn->state.ballHitPosition - se.position).len() < rules.arena.depth / 2.0 && se.id == goalKeeperId) ||
                  se.id != goalKeeperId)) {
 
@@ -509,7 +509,23 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                 } else {
 
                     Vec3 target = targetBallNode->state.ball.position;
-                    target.setZ(target.getZ() - 2);
+
+                    double radsum = robot.radius + targetBallNode->state.ball.radius;
+                    if (abs(target.getX() - robot.position.getX()) < radsum) {
+                        target = robot.position;
+                        target.setZ(target.getZ() - 2);
+                        if (abs(robot.position.getX()) < abs(targetBallNode->state.ball.position.getX()) + radsum) {
+                            if (robot.position.getX() < targetBallNode->state.ball.position.getX())
+                                target.setX(target.getX() - radsum * 2);
+                            else
+                                target.setX(target.getX() + radsum * 2);
+                        } else {
+                            target.setX(0.0);
+                        }
+                    } else {
+                        target.setZ(target.getZ() - radsum * 2);
+                    }
+
 
 
 //                    cout << " Default--- Go 2 ball " << target.toString() << " parentNode tick: "
