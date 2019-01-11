@@ -8,12 +8,6 @@
 
 #ifndef CVL_Utils_h
 #define CVL_Utils_h
-#ifdef LOCAL_RUN
-
-#include <iostream>
-#include <sstream>
-
-#endif
 
 #include <cmath>
 #include <numeric>
@@ -151,9 +145,5 @@ double max(double a, double b);
 double clamp(double target, double lb, double ub);
 
 double dot(Vec3 a, Vec3 b);
-
-void writeLog(const std::stringstream &ss);
-
-void closeLog();
 
 #endif /* CVL_Utils_h */
