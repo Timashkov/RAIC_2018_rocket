@@ -110,6 +110,10 @@ private:
     Arena arena;
     std::unique_ptr<SimulationEngine> engine;
     double delta_time;
+    double GOAL_THRESHOLD;
+    
+    double ENEMY_GOAL_INACCESS_Z;
+    double ENEMY_GOAL_INACCESS_X;
 
 public:
     Simulation() :
