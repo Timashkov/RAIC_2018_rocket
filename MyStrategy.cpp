@@ -4,7 +4,7 @@
 
 using namespace model;
 
-MyStrategy::MyStrategy() {
+MyStrategy::MyStrategy():goalKeeperId(-1) {
 
 }
 
@@ -12,27 +12,17 @@ void MyStrategy::act(const Robot &me, const Rules &rules, const Game &game, Acti
     // Поэтому, если мы не касаемся земли, будет использовать нитро
     // чтобы как можно быстрее попасть обратно на землю
 
-    if (goalKeeper.robotId == -1 && game.robots.size() > 2) {
+    if (goalKeeperId == -1 && game.robots.size() > 2) {
         int k = 1000;
         for (Robot r: game.robots) {
             if (r.id < k && r.is_teammate)
                 k = r.id;
         }
-        goalKeeper.robotId = k;
-        goalKeeper.anchorPoint = Vec3(0.0, 0.0, -(rules.arena.depth / 2.0));
-
-        for (Robot rr: game.robots) {
-            if (rr.id != goalKeeper.robotId && rr.is_teammate) {
-                RoleParameters rp;
-                rp.robotId = rr.id;
-                rp.anchorPoint = Vec3(game.ball.x, 0.0, game.ball.z);
-                forwards.push_back(rp);
-            }
-        }
+        goalKeeperId = k;
     }
 
     if (!sim.isInited()) {
-        sim.init(game, rules, goalKeeper, forwards);
+        sim.init(game, rules, goalKeeperId);
     }
     sim.setTick(game);
 

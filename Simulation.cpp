@@ -11,15 +11,14 @@
 #include "utils.h"
 #include <memory>
 
-const int DEPTH = 60;
+const int DEPTH = 50;
 
-void Simulation::init(const Game &g, const Rules &rul, const RoleParameters &goalKeeper,
-                      const vector<RoleParameters> &forwards) {
+void Simulation::init(const Game &g, const Rules &rul, const int &goal_keeper_id) {
     rules = rul;
     std::srand(rul.seed);
 
-    this->goalKeeperId = goalKeeper.robotId;
-    this->defaultGoalKeeperPosition = goalKeeper.anchorPoint;
+    this->goalKeeperId = goal_keeper_id;
+    this->defaultGoalKeeperPosition = Vec3(0.0, 0.0, -(rules.arena.depth / 2.0));
 
     attackerId = -1;
     arena = rul.arena;
@@ -152,7 +151,6 @@ void Simulation::tickForBall(shared_ptr<TreeNode> parent) {
     }
 
     processingNodes.push(node);
-    calculateNodeBounty(node);
 
     if (!processingNodes.empty()) {
         shared_ptr<TreeNode> tn = processingNodes.front();
@@ -235,40 +233,40 @@ void Simulation::tickForBall(shared_ptr<TreeNode> parent) {
 void Simulation::updateForBall(shared_ptr<TreeNode> &node, double delta_time) {
     engine->move(node->state.ball, delta_time);
     Vec3 collisionPoint = engine->collide_with_arena(node->state.ball);
-    node->state.ball_wall_collision.push_back(collisionPoint);
+//    node->state.ball_wall_collision.push_back(collisionPoint);
     node->state.ballHitPosition = getHitPosition(node->state.ball.position);
 }
 
 void Simulation::calculateNodeBounty(shared_ptr<TreeNode> node) {
-    if (!node->state.ball_collision.empty()) {
-        for (const CollisionParams &cp: node->state.ball_collision) {
-            if (isBallDirectionToGoal(cp.anyEntity, true)) {
-                node->state.bounty += -10;
-            } else if (isBallDirectionToGoal(cp.anyEntity, false)) {
-                node->state.bounty += 10;
-            } else if (cp.anyEntity.velocity.getZ() < 0) {
-                node->state.bounty += -5;
-            } else {
-                node->state.bounty += 1;
-            }
-        }
-    }
-
-    for (int i = 0; i < node->state.robots.size(); i++) {
-        Vec3 res = node->state.robots[i].position - node->state.ball.position;
-        if (node->state.distances.size() <= i) {
-            node->state.distances.push_back(res.len());
-        } else {
-            node->state.distances[i] = res.len();
-        }
-    }
-
-    TreeNode *tmp = node.get();
-
-    while (tmp->parent != NULL) {
-        tmp->parent->state.bounty += tmp->state.bounty;
-        tmp = tmp->parent;
-    }
+//    if (!node->state.ball_collision.empty()) {
+//        for (const CollisionParams &cp: node->state.ball_collision) {
+//            if (isBallDirectionToGoal(cp.anyEntity, true)) {
+//                node->state.bounty += -10;
+//            } else if (isBallDirectionToGoal(cp.anyEntity, false)) {
+//                node->state.bounty += 10;
+//            } else if (cp.anyEntity.velocity.getZ() < 0) {
+//                node->state.bounty += -5;
+//            } else {
+//                node->state.bounty += 1;
+//            }
+//        }
+//    }
+//
+//    for (int i = 0; i < node->state.robots.size(); i++) {
+//        Vec3 res = node->state.robots[i].position - node->state.ball.position;
+//        if (node->state.distances.size() <= i) {
+//            node->state.distances.push_back(res.len());
+//        } else {
+//            node->state.distances[i] = res.len();
+//        }
+//    }
+//
+//    TreeNode *tmp = node.get();
+//
+//    while (tmp->parent != NULL) {
+//        tmp->parent->state.bounty += tmp->state.bounty;
+//        tmp = tmp->parent;
+//    }
 }
 
 void Simulation::adjustRobotsPositions(const vector<Robot> &rs) {
@@ -355,8 +353,6 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
 
     TreeNode *tn = baseNode.get();
 //    cout << "Check alternatives for node " << baseNode->state.current_tick << endl;
-//    bool skipFurtherAnalyze = true;
-//    int skipcount = 0;
     while (tn->children.size() > 0) {
 //        cout << "Hit position " << tn->state.ballHitPosition.toString() << " for tick " << tn->state.current_tick
 //             << endl;
@@ -364,9 +360,9 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         for (SimulationEntity &se: tn->state.robots) {
             if (se.teammate &&
                 se.touch &&
+                se.position.getZ() < tn->state.ball.position.getZ() &&
                 (((tn->state.ballHitPosition - se.position).len() < rules.arena.depth / 2.0 && se.id == goalKeeperId) ||
-                 se.id != goalKeeperId) &&
-                se.position.getZ() < tn->state.ball.position.getZ()) {
+                 se.id != goalKeeperId)) {
 
 //                skipFurtherAnalyze = false;
                 Vec3 rp = se.position;
@@ -388,7 +384,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                 }
             }
         }
-        if (attackerId != -1 /*|| skipFurtherAnalyze*/) {
+        if (attackerId != -1) {
             break;
         }
 
@@ -712,18 +708,18 @@ int Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 exclu
                 collided = true;
             }
 
-            Vec3 collision_normal = engine->collide_with_arena(rr1);
-            if (collision_normal == Vec3::None) {
-                rr1.touch = false;
-            } else {
-                rr1.touch = true;
-                rr1.touch_normal = collision_normal;
-            }
+//            Vec3 collision_normal = engine->collide_with_arena(rr1);
+//            if (collision_normal == Vec3::None) {
+//                rr1.touch = false;
+//            } else {
+//                rr1.touch = true;
+//                rr1.touch_normal = collision_normal;
+//            }
         }
 
 //        cout << "Velocity after increase " << rr1.velocity.len() << endl;
         step++;
-        if (rr1.velocity.len()> rules.ROBOT_MAX_GROUND_SPEED-0.02) {
+        if (rr1.velocity.len() > rules.ROBOT_MAX_GROUND_SPEED - 0.02) {
             double rest_time = ((rr1.position - bptarget).len() /
                                 (rules.ROBOT_MAX_GROUND_SPEED * delta_time * rules.MICROTICKS_PER_TICK));
 //            cout << "Rest Time " << rest_time << endl;

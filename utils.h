@@ -11,7 +11,6 @@
 
 #include <cmath>
 #include <numeric>
-#include <vector>
 #include <string>
 
 const double NEVER_COLLISION = 1000000;
@@ -24,53 +23,45 @@ bool isEqual(double a, double b);
 
 class Vec3 {
 private:
-    vector<double> vec;
+    double X,Y,Z;
 public:
-    Vec3(const double x, const double y, const double z) {
-        vec = {x, y, z};
-    }
-
-    Vec3(const vector<double> &V) {
-        vec = V;
-    }
+    Vec3(const double& x, const double& y, const double& z): X(x), Y(y),Z(z) {}
 
     ~Vec3() {}
 
-    inline double getX() const { return vec[0]; }
+    inline double getX() const { return X; }
 
-    inline double getY() const { return vec[1]; }
+    inline double getY() const { return Y; }
 
-    inline double getZ() const { return vec[2]; }
+    inline double getZ() const { return Z; }
 
-    inline void setX(double a) { vec[0] = a; }
+    inline void setX(double a) { X = a; }
 
-    inline void setY(double a) { vec[1] = a; }
+    inline void setY(double a) { Y = a; }
 
-    inline void setZ(double a) { vec[2] = a; }
-
-    inline vector<double> getVec() const { return vec; }
+    inline void setZ(double a) { Z = a; }
 
     inline Vec3 mul(double k) {
 
-        return Vec3(vec[0] * k, vec[1] * k, vec[2] * k);
+        return Vec3(X * k, Y * k, Z * k);
     }
 
     inline Vec3 add(Vec3 &v) const {
 
-        return Vec3(vec[0] + v.getX(), vec[1] + v.getY(), vec[2] + v.getZ());
+        return Vec3(X + v.getX(), Y + v.getY(), Z + v.getZ());
     }
 
     inline Vec3 sub(Vec3 &v) const {
-        return Vec3(vec[0] - v.getX(), vec[1] - v.getY(), vec[2] - v.getZ());
+        return Vec3(X - v.getX(), Y - v.getY(), Z - v.getZ());
     }
 
     inline double len() const {
-        return sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
+        return sqrt(X * X + Y * Y + Z * Z);
     }
 
     inline Vec3 normalized() const {
         double length = len();
-        return Vec3(vec[0] / length, vec[1] / length, vec[2] / length);
+        return Vec3(X / length, Y / length, Z / length);
     }
 
     friend Vec3 operator+(Vec3 lhs, const Vec3 &rhs) {
@@ -125,7 +116,7 @@ public:
     static Vec3 None;
 
     std::string toString() const {
-        string s = "(" + to_string(vec[0]) + ";" + to_string(vec[1]) + ";" + to_string(vec[2]) + ") size=" + to_string(len());
+        string s = "(" + to_string(X) + ";" + to_string(Y) + ";" + to_string(Z) + ") size=" + to_string(len());
         return s;
     }
 };

@@ -16,7 +16,6 @@
 #include "model/Robot.h"
 #include "model/Action.h"
 #include "utils.h"
-#include "RoleParameters.h"
 #include <queue>
 #include "SimulationEngine.h"
 
@@ -45,17 +44,17 @@ public:
 
 class State {
 public:
-    State() : current_tick(0),bounty(0), ballHitPosition(Vec3::None) {};
+    State() : current_tick(0), bounty(0), ballHitPosition(Vec3::None) {};
 
     State(const State &source) :
             ball(source.ball),
             robots(source.robots),
             nitro_packs(source.nitro_packs),
             current_tick(source.current_tick),
-            ball_collision(source.ball_collision),
-            robots_collision(source.robots_collision),
-            ball_wall_collision(source.ball_wall_collision),
-            distances(source.distances),
+//            ball_collision(source.ball_collision),
+//            robots_collision(source.robots_collision),
+//            ball_wall_collision(source.ball_wall_collision),
+//            distances(source.distances),
             ballHitPosition(Vec3::None),
             bounty(0) {}
 
@@ -65,12 +64,12 @@ public:
     vector<SimulationEntity> robots;
     vector<SimulationEntity> nitro_packs;
     int current_tick;
-    vector<CollisionParams> ball_collision;
-    vector<CollisionParams> robots_collision;
-    vector<Vec3> ball_wall_collision;
+//    vector<CollisionParams> ball_collision;
+//    vector<CollisionParams> robots_collision;
+//    vector<Vec3> ball_wall_collision;
     int bounty;
     Vec3 ballHitPosition;
-    vector<double> distances;
+//    vector<double> distances;
 };
 
 class TreeNode {
@@ -83,8 +82,9 @@ public:
             state(st),
             parent(pr) {}
 
-    TreeNode(const TreeNode * tn):
-        state(tn->state), parent(tn->parent){}
+    TreeNode(const TreeNode *tn) :
+            state(tn->state), parent(tn->parent) {}
+
     ~TreeNode() {}
 
     vector<shared_ptr<TreeNode> > children;
@@ -113,20 +113,20 @@ private:
 
 public:
     Simulation() :
-    inited(false),
-    defaultGoalKeeperPosition(Vec3::None),
-    goalTarget(Vec3::None),
-    attackerTarget(Vec3::None),
-    current_tick(0),
-    goalKeeperId(-1),
-    delta_time(0.0){
-        
+            inited(false),
+            defaultGoalKeeperPosition(Vec3::None),
+            goalTarget(Vec3::None),
+            attackerTarget(Vec3::None),
+            current_tick(0),
+            goalKeeperId(-1),
+            delta_time(0.0) {
+
     }
 
     ~Simulation() {}
 
     void
-    init(const Game &g, const Rules &rul, const RoleParameters &goalKeeper, const vector<RoleParameters> &forwards);
+    init(const Game &g, const Rules &rul, const int &goal_keeper_id);
 
     void tickForBall(shared_ptr<TreeNode> parent);
 
@@ -155,9 +155,9 @@ public:
     void setRobotsParameters(const shared_ptr<TreeNode> &node, const Game &g);
 
     void checkAlternatives(shared_ptr<TreeNode> baseNode);
-    
-    int checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 excludeTarget,int max_attempts);
-    
+
+    int checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 excludeTarget, int max_attempts);
+
     Vec3 getHitPosition(Vec3 ball_moment_position);
 };
 

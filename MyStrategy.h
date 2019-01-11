@@ -7,18 +7,18 @@
 
 #include "Strategy.h"
 #include "Simulation.h"
-#include "RoleParameters.h"
 
 class MyStrategy : public Strategy {
 private:
     Simulation sim;
-    RoleParameters goalKeeper;
-    vector<RoleParameters> forwards;
+    int goalKeeperId;
 public:
     MyStrategy();
-    ~MyStrategy(){}
-    
-    void act(const model::Robot& me, const model::Rules& rules, const model::Game& game, model::Action& action) override;
+
+    ~MyStrategy() {}
+
+    void
+    act(const model::Robot &me, const model::Rules &rules, const model::Game &game, model::Action &action) override;
 };
 
 #endif

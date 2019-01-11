@@ -204,7 +204,26 @@ void testRun1() {
     //    sim.setTick(*game);
     
     
-    blabla(game->ball, r1, rules.get());
+//    blabla(game->ball, r1, rules.get());
+
+
+    cout<< " start speed " << rules->ROBOT_MAX_JUMP_SPEED << endl;
+    double time = rules->ROBOT_MAX_JUMP_SPEED / rules->GRAVITY;
+    cout << " fly time " << time << endl;
+    double ticks = time * rules->TICKS_PER_SECOND;
+    cout << "ticks count "<< ticks <<endl;
+    double height = rules->GRAVITY * time*time / 2.0;
+    cout << " height "<< height<< endl;
+
+
+//    e.position.setY(e.position.getY() - rules.GRAVITY * delta_time * delta_time / 2.0);
+//    e.velocity.setY(e.velocity.getY() - rules.GRAVITY * delta_time);
+
+    double startsp = rules->GRAVITY * 14.0 / 60.0;
+    cout<< " start sp "<< startsp <<endl;
+    double height2 = startsp*(14.0/60.0) - rules->GRAVITY * (14.0/60.0)*(14.0/60.0) / 2.0;
+    cout << " height "<< height2<< endl;
+
 }
 
 int main(int argc, char *argv[]) {
