@@ -159,6 +159,8 @@ public:
     int checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 excludeTarget, int max_attempts);
 
     Vec3 getHitPosition(Vec3 ball_moment_position);
+
+    void moveRobotAndAdjustNextNode(SimulationEntity &robot, TreeNode *childNode);
 };
 
 #endif /* Simulation_h */

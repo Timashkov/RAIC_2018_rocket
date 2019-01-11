@@ -346,8 +346,6 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
     vector<double> jumppos = vector<double>{1.29, 1.53, 1.75, 1.98, 2.19, 2.33, 2.58, 2.78, 2.96, 3.13, 3.29, 3.44,
                                             3.59, 3.72};
 
-    double delta_time = 1.0 / 6000.0;
-
     int ticks_till_collision = -1;
     int on_collision_tick = -1;
 
@@ -360,7 +358,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         for (SimulationEntity &se: tn->state.robots) {
             if (se.teammate &&
                 se.touch &&
-                se.position.getZ() < tn->state.ball.position.getZ() &&
+                se.position.getZ()-1 < tn->state.ball.position.getZ() &&
                 (((tn->state.ballHitPosition - se.position).len() < rules.arena.depth / 2.0 && se.id == goalKeeperId) ||
                  se.id != goalKeeperId)) {
 
@@ -421,25 +419,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     robot.action.target_velocity_y = 0;
                     robot.action.target_velocity_z = 0;
                     robot.action_set = true;
-
-                    for (int j = 0; j < 100; j++) {
-                        engine->moveRobot(robot, delta_time);
-
-                        Vec3 collision_normal = engine->collide_with_arena(robot);
-                        if (collision_normal == Vec3::None) {
-                            robot.touch = false;
-                        } else {
-                            robot.touch = true;
-                            robot.touch_normal = collision_normal;
-                        }
-                    }
-                    for (SimulationEntity &childSe: childNode->state.robots) {
-                        if (childSe.id == robot.id) {
-                            childSe.position = robot.position;
-                            childSe.velocity = robot.velocity;
-                            childSe.touch = robot.touch;
-                        }
-                    }
+                    moveRobotAndAdjustNextNode(robot, childNode);
 
                 } else {
 
@@ -450,24 +430,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     robot.action.target_velocity_y = del.getY();
                     robot.action.target_velocity_z = del.getZ();
                     robot.action_set = true;
-                    for (int j = 0; j < 100; j++) {
-                        engine->moveRobot(robot, delta_time);
-
-                        Vec3 collision_normal = engine->collide_with_arena(robot);
-                        if (collision_normal == Vec3::None) {
-                            robot.touch = false;
-                        } else {
-                            robot.touch = true;
-                            robot.touch_normal = collision_normal;
-                        }
-                    }
-                    for (SimulationEntity &childSe: childNode->state.robots) {
-                        if (childSe.id == robot.id) {
-                            childSe.position = robot.position;
-                            childSe.velocity = robot.velocity;
-                            childSe.touch = robot.touch;
-                        }
-                    }
+                    moveRobotAndAdjustNextNode(robot, childNode);
                 }
             }
 
@@ -497,24 +460,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     robot.action_set = true;
 //                    cout << endl;
 
-                    for (int j = 0; j < 100; j++) {
-                        engine->moveRobot(robot, delta_time);
-
-                        Vec3 collision_normal = engine->collide_with_arena(robot);
-                        if (collision_normal == Vec3::None) {
-                            robot.touch = false;
-                        } else {
-                            robot.touch = true;
-                            robot.touch_normal = collision_normal;
-                        }
-                    }
-                    for (SimulationEntity &childSe: childNode->state.robots) {
-                        if (childSe.id == robot.id) {
-                            childSe.position = robot.position;
-                            childSe.velocity = robot.velocity;
-                            childSe.touch = robot.touch;
-                        }
-                    }
+                    moveRobotAndAdjustNextNode(robot, childNode);
 
                 } else if (robot.id == goalKeeperId) {
 
@@ -528,24 +474,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     robot.action.target_velocity_y = del.getY();
                     robot.action.target_velocity_z = del.getZ();
                     robot.action_set = true;
-                    for (int j = 0; j < 100; j++) {
-                        engine->moveRobot(robot, delta_time);
-
-                        Vec3 collision_normal = engine->collide_with_arena(robot);
-                        if (collision_normal == Vec3::None) {
-                            robot.touch = false;
-                        } else {
-                            robot.touch = true;
-                            robot.touch_normal = collision_normal;
-                        }
-                    }
-                    for (SimulationEntity &childSe: childNode->state.robots) {
-                        if (childSe.id == robot.id) {
-                            childSe.position = robot.position;
-                            childSe.velocity = robot.velocity;
-                            childSe.touch = robot.touch;
-                        }
-                    }
+                    moveRobotAndAdjustNextNode(robot, childNode);
                 }
             }
 
@@ -576,27 +505,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     robot.action.target_velocity_y = del.getY();
                     robot.action.target_velocity_z = del.getZ();
                     robot.action_set = true;
-                    if (del.len() > 0.01) {
-                        for (int j = 0; j < 100; j++) {
-                            engine->moveRobot(robot, delta_time);
-
-                            Vec3 collision_normal = engine->collide_with_arena(robot);
-                            if (collision_normal == Vec3::None) {
-                                robot.touch = false;
-                            } else {
-                                robot.touch = true;
-                                robot.touch_normal = collision_normal;
-                            }
-                        }
-                        for (SimulationEntity &childSe: childNode->state.robots) {
-                            if (childSe.id == robot.id) {
-                                childSe.position = robot.position;
-                                childSe.velocity = robot.velocity;
-                                childSe.touch = robot.touch;
-                            }
-                        }
-
-                    }
+                    moveRobotAndAdjustNextNode(robot, childNode);
                 } else {
 
                     Vec3 target = targetBallNode->state.ball.position;
@@ -618,24 +527,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     robot.action.target_velocity_y = del.getY();
                     robot.action.target_velocity_z = del.getZ();
                     robot.action_set = true;
-                    for (int j = 0; j < 100; j++) {
-                        engine->moveRobot(robot, delta_time);
-
-                        Vec3 collision_normal = engine->collide_with_arena(robot);
-                        if (collision_normal == Vec3::None) {
-                            robot.touch = false;
-                        } else {
-                            robot.touch = true;
-                            robot.touch_normal = collision_normal;
-                        }
-                    }
-                    for (SimulationEntity &childSe: childNode->state.robots) {
-                        if (childSe.id == robot.id) {
-                            childSe.position = robot.position;
-                            childSe.velocity = robot.velocity;
-                            childSe.touch = robot.touch;
-                        }
-                    }
+                    moveRobotAndAdjustNextNode(robot, childNode);
                 }
 
             }
@@ -745,4 +637,27 @@ Vec3 Simulation::getHitPosition(Vec3 ball_moment_position) {
     Vec3 hitPosition =
             ball_moment_position - (goalDirection.normalized() * (rules.ROBOT_RADIUS + rules.BALL_RADIUS - 0.01));
     return hitPosition;
+}
+
+void Simulation::moveRobotAndAdjustNextNode(SimulationEntity &robot, TreeNode *childNode) {
+    if (robot.velocity.len() > 0) {
+        for (int j = 0; j < rules.MICROTICKS_PER_TICK; j++) {
+            engine->moveRobot(robot, delta_time);
+
+            Vec3 collision_normal = engine->collide_with_arena(robot);
+            if (collision_normal == Vec3::None) {
+                robot.touch = false;
+            } else {
+                robot.touch = true;
+                robot.touch_normal = collision_normal;
+            }
+        }
+    }
+    for (SimulationEntity &childSe: childNode->state.robots) {
+        if (childSe.id == robot.id) {
+            childSe.position = robot.position;
+            childSe.velocity = robot.velocity;
+            childSe.touch = robot.touch;
+        }
+    }
 }
