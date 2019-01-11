@@ -7,65 +7,65 @@
 using namespace model;
 using namespace std;
 
-void checkAchievement(SimulationEntity &rr1, Vec3 bptarget,Rules *rules, int max_attempts) {
+void checkAchievement(SimulationEntity &rr1, Vec3 bptarget, Rules *rules, int max_attempts) {
     double delta_time = 1.0 / 6000.0;
-    
+
     cout << "Bparget " << bptarget.toString() << endl;
     cout << delta_time << endl;
-    
+
     Vec3 initial_delta = bptarget - rr1.position;
     Vec3 action_target_velocity = (bptarget - rr1.position);
     action_target_velocity = action_target_velocity.normalized() * rules->ROBOT_MAX_GROUND_SPEED;
-    
+
     cout << "initial delta : " << initial_delta.len() << endl;
     cout << "Action tv" << action_target_velocity.toString() << " len " << action_target_velocity.len() << endl;
-    
+
     double distance_initial = initial_delta.len();
     double distance_after = initial_delta.len();
     int step = 0;
-    while(distance_after <= distance_initial){
+    while (distance_after <= distance_initial) {
         distance_initial = distance_after;
         for (int j = 0; j < 100; j++) {
             Vec3 target_velocity = clamp(action_target_velocity, rules->ROBOT_MAX_GROUND_SPEED);
             target_velocity = target_velocity - (rr1.touch_normal * dot(rr1.touch_normal, target_velocity));
             Vec3 target_velocity_change = target_velocity - rr1.velocity;
-            
+
             if (target_velocity_change.len() > 0.0) {
-                
+
                 double acceleration = rules->ROBOT_ACCELERATION * max(0.0, rr1.touch_normal.getY());
                 rr1.velocity = rr1.velocity + clamp(target_velocity_change.normalized() * acceleration * delta_time,
                                                     target_velocity_change.len());
             }
-            
+
             rr1.velocity = clamp(rr1.velocity, rules->MAX_ENTITY_SPEED);
             rr1.position = rr1.position + rr1.velocity * delta_time;
         }
         step++;
-        distance_after =(rr1.position - bptarget).len();
+        distance_after = (rr1.position - bptarget).len();
         cout << "vel " << rr1.velocity.toString() << " vel " << rr1.velocity.len() << endl;
         cout << "pos " << rr1.position.toString() << endl;
         cout << "delta : " << distance_after << " on tick " << step << endl;
     }
-    
-    cout << "delta : " << (rr1.position - bptarget).len() << " step: " << step<< endl;
+
+    cout << "delta : " << (rr1.position - bptarget).len() << " step: " << step << endl;
 }
 
 void blabla(Ball ball, Robot r1, Rules *rules) {
     SimulationEntity se;
     se.velocity = Vec3(ball.velocity_x, ball.velocity_y, ball.velocity_z);
     se.position = Vec3(ball.x, ball.y, ball.z);
-    
+
     SimulationEntity rob;
     rob.velocity = Vec3(r1.velocity_x, r1.velocity_y, r1.velocity_z);
     rob.touch_normal = Vec3(r1.touch_normal_x, r1.touch_normal_y, r1.touch_normal_z);
     rob.position = Vec3(r1.x, r1.y, r1.z);
-    
+
     double delta_time = 1.0 / 6000.0;
     int first_attempt = 50;
-    
+
     Vec3 bptarget = se.position + se.velocity * first_attempt * delta_time * 100;
-    
-    checkAchievement(rob, bptarget,rules, first_attempt);
+
+    checkAchievement(rob, bptarget, rules, first_attempt);
 }
 
 
@@ -115,7 +115,7 @@ void testRun1() {
     rules->NITRO_PACK_AMOUNT = 100.0;
     rules->NITRO_PACK_RESPAWN_TICKS = 600;
     rules->GRAVITY = 30.0;
-    
+
     game->ball = Ball();
     game->ball.x = 0.0;
     game->ball.y = 1.0;
@@ -124,7 +124,7 @@ void testRun1() {
     game->ball.velocity_y = 0.0;
     game->ball.velocity_z = 1.0;
     game->ball.radius = 2.0;
-    
+
     game->current_tick = 0;
     Robot r1 = Robot();
     r1.id = 1;
@@ -143,7 +143,7 @@ void testRun1() {
     r1.touch = true;
     r1.is_teammate = true;
     game->robots.push_back(r1);
-    
+
     //    Robot r2 = Robot();
     //    r2.id = 2;
     //    r2.player_id = 0;
@@ -202,45 +202,81 @@ void testRun1() {
     //    sim.init(*game, *rules, gk, forwards);
     //    game->current_tick=1;
     //    sim.setTick(*game);
-    
-    
+
+
 //    blabla(game->ball, r1, rules.get());
 
 
-    cout<< " start speed " << rules->ROBOT_MAX_JUMP_SPEED << endl;
+    cout << " start speed " << rules->ROBOT_MAX_JUMP_SPEED << endl;
     double time = rules->ROBOT_MAX_JUMP_SPEED / rules->GRAVITY;
     cout << " fly time " << time << endl;
     double ticks = time * rules->TICKS_PER_SECOND;
-    cout << "ticks count "<< ticks <<endl;
-    double height = rules->GRAVITY * time*time / 2.0;
-    cout << " height "<< height<< endl;
+    cout << "ticks count " << ticks << endl;
+    double height = rules->GRAVITY * time * time / 2.0;
+    cout << " height " << height << endl;
+
 
 
 //    e.position.setY(e.position.getY() - rules.GRAVITY * delta_time * delta_time / 2.0);
 //    e.velocity.setY(e.velocity.getY() - rules.GRAVITY * delta_time);
 
-    double startsp = rules->GRAVITY * 14.0 / 60.0;
-    cout<< " start sp "<< startsp <<endl;
-    double height2 = startsp*(14.0/60.0) - rules->GRAVITY * (14.0/60.0)*(14.0/60.0) / 2.0;
-    cout << " height "<< height2<< endl;
 
+    double dt = 1.0 / (rules->TICKS_PER_SECOND);// * rules->MICROTICKS_PER_TICK);
+    double testHeight = 0.05;
+    double vel = rules->ROBOT_MAX_JUMP_SPEED;
+    for (int j = 0; j < ticks; j++) {
+//        for (int i = 0; i < rules->MICROTICKS_PER_TICK; i++) {
+            testHeight += vel * dt - rules->GRAVITY * dt * dt / 2;
+            vel -= rules->GRAVITY * dt;
+//        }
+        cout << "text height " << testHeight << endl;
+    }
 }
-
+/*text height 0.295833
+text height 0.533333
+text height 0.7625
+text height 0.983333
+text height 1.19583
+text height 1.4
+text height 1.59583
+text height 1.78333
+text height 1.9625
+text height 2.13333
+text height 2.29583
+text height 2.45
+text height 2.59583
+text height 2.73333
+text height 2.8625
+text height 2.98333
+text height 3.09583
+text height 3.2
+text height 3.29583
+text height 3.38333
+text height 3.4625
+text height 3.53333
+text height 3.59583
+text height 3.65
+text height 3.69583
+text height 3.73333
+text height 3.7625
+text height 3.78333
+text height 3.79583
+text height 3.8*/
 int main(int argc, char *argv[]) {
-        if (argc == 4) {
-            Runner runner(argv[1], argv[2], argv[3]);
-            runner.run();
-        } else {
-            Runner runner("127.0.0.1", "31001", "0000000000000000");
-            runner.run();
-        }
-    
-//    testRun1();
+//        if (argc == 4) {
+//            Runner runner(argv[1], argv[2], argv[3]);
+//            runner.run();
+//        } else {
+//            Runner runner("127.0.0.1", "31001", "0000000000000000");
+//            runner.run();
+//        }
+
+    testRun1();
     return 0;
 }
 
 Runner::Runner(const char *host, const char *port, const char *token)
-: remoteProcessClient(host, atoi(port)), token(token) {
+        : remoteProcessClient(host, atoi(port)), token(token) {
 }
 
 void Runner::run() {
