@@ -350,10 +350,10 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
     int on_collision_tick = -1;
 
     TreeNode *tn = baseNode.get();
-//    cout << "Check alternatives for node " << baseNode->state.current_tick << endl;
+    cout << "Check alternatives for node " << baseNode->state.current_tick << endl;
     while (tn->children.size() > 0) {
-//        cout << "Hit position " << tn->state.ballHitPosition.toString() << " for tick " << tn->state.current_tick
-//             << endl;
+        cout << "Hit position " << tn->state.ballHitPosition.toString() << " for tick " << tn->state.current_tick
+             << endl;
 
         for (SimulationEntity &se: tn->state.robots) {
             if (se.teammate &&
@@ -362,7 +362,6 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                 (((tn->state.ballHitPosition - se.position).len() < rules.arena.depth / 2.0 && se.id == goalKeeperId) ||
                  se.id != goalKeeperId)) {
 
-//                skipFurtherAnalyze = false;
                 Vec3 rp = se.position;
                 if (tn->state.ball.danToArena.distance > 4) {
                     ticks_till_collision = -1;
@@ -373,9 +372,9 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     on_collision_tick = tn->state.current_tick;
                 }
                 if (ticks_till_collision != -1) {
-//                    cout << " Check achievement with current tick " << current_tick << " and will be on "
-//                         << on_collision_tick << " ticks unitl collision " << ticks_till_collision << endl;
-//                    cout << " For Attacker " << se.id << endl;
+                    cout << " Check achievement with current tick " << current_tick << " and will be on "
+                         << on_collision_tick << " ticks unitl collision " << ticks_till_collision << endl;
+                    cout << " For Attacker " << se.id << endl;
                     attackerId = se.id;
                     attackerTarget = tn->state.ballHitPosition;
                     break;
@@ -400,19 +399,19 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
 
     tn = baseNode.get();
 
-//    cout << "ACTIONS " << tn->state.current_tick << endl;
+    cout << "ACTIONS " << tn->state.current_tick << endl;
 
     if (ticks_till_collision != -1 && ticks_till_collision != on_collision_tick - tn->state.current_tick) {
-//        cout << "Required adjustment" << endl;
+        cout << "+++++++Required adjustment ++++++++"<< endl;
 
         int target_tick =
                 (on_collision_tick - tn->state.current_tick - ticks_till_collision) / 2 + tn->state.current_tick;
-//        cout << "Adjust to tick " << target_tick << endl;
+        cout << "Adjust to tick " << target_tick << endl;
         while (tn->children.size() > 0 && tn->state.current_tick <= target_tick) {
             TreeNode *childNode = tn->children[tn->children.size() - 1].get();
             for (SimulationEntity &robot: tn->state.robots) {
                 if (robot.velocity.len() < 0.5) {
-
+                    cout << " Stay where you are id="<< robot.id << endl;
                     robot.action.jump_speed = 0.0;
                     robot.action.use_nitro = false;
                     robot.action.target_velocity_x = 0;
@@ -422,7 +421,8 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     moveRobotAndAdjustNextNode(robot, childNode);
 
                 } else {
-
+                    cout << " Go to goal id ="<< robot.id << endl;
+                    
                     robot.action.jump_speed = 0.0;
                     robot.action.use_nitro = false;
                     Vec3 del = defaultGoalKeeperPosition - robot.position;
@@ -436,34 +436,36 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
 
             tn = childNode;
         }
+        cout<< " ++++++ Adjused ++++++ "<<endl;
     } else if (ticks_till_collision != -1) {
+        cout<< " +++++++ TICK COLLISION EXISTS +++++++++"<<endl;
         while (tn->children.size() > 0 && tn->state.current_tick <= on_collision_tick) {
             TreeNode *childNode = tn->children[tn->children.size() - 1].get();
             for (SimulationEntity &robot: tn->state.robots) {
                 if (robot.id == attackerId) {
 
-//                    cout << " Go 2 position " << attackerTarget.toString() << " parentNode tick: "
-//                         << tn->state.current_tick
-//                         << endl;
+                    cout << " Go 2 position LAST ATTACKER " << attackerTarget.toString() << " parentNode tick: "
+                         << tn->state.current_tick << " attacker id " << robot.id
+                         << endl;
 
-//                    cout << "New target: " << attackerTarget.toString() << endl;
-//                    cout << "Current velocity " << robot.velocity.toString() << " len " << robot.velocity.len() << endl;
-//                    cout << "Current position " << robot.position.toString() << endl;
+                    cout << "New target: " << attackerTarget.toString() << endl;
+                    cout << "Current velocity " << robot.velocity.toString() << " len " << robot.velocity.len() << endl;
+                    cout << "Current position " << robot.position.toString() << endl;
 
                     robot.action.jump_speed = 0.0;
                     robot.action.use_nitro = false;
                     Vec3 del = (attackerTarget - robot.position).normalized() * rules.ROBOT_MAX_GROUND_SPEED;
-//                    cout << "Target velocity " << del.toString() << " len " << del.len() << endl;
+                    cout << "Target velocity " << del.toString() << " len " << del.len() << endl;
                     robot.action.target_velocity_x = del.getX();
                     robot.action.target_velocity_y = del.getY();
                     robot.action.target_velocity_z = del.getZ();
                     robot.action_set = true;
-//                    cout << endl;
+                    cout << endl;
 
                     moveRobotAndAdjustNextNode(robot, childNode);
 
                 } else if (robot.id == goalKeeperId) {
-
+                    cout<< " GOALKEEPER id = "<< robot.id << endl;
                     robot.action.jump_speed = 0.0;
                     robot.action.use_nitro = false;
                     Vec3 del = defaultGoalKeeperPosition - robot.position;
@@ -479,8 +481,10 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
             }
 
             tn = childNode;
+            cout<< " ------- TICK COLLISION EXISTS END -------"<<endl;
         }
     } else {
+        cout << " +++++++++ FREE GOING +++++++++++"<<endl;
         TreeNode *targetBallNode = tn;
         for (int j = 0; j < 15; j++) {
             targetBallNode = targetBallNode->children[tn->children.size() - 1].get();
@@ -488,86 +492,79 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         for (int i = 0; i < 15; i++) {
             TreeNode *childNode = tn->children[tn->children.size() - 1].get();
             for (SimulationEntity &robot: tn->state.robots) {
+                Vec3 target = defaultGoalKeeperPosition;
+                
                 if (robot.id == goalKeeperId) {
 
-//                    cout << " Default---- Go 2 position " << defaultGoalKeeperPosition.toString()
-//                         << " parentNode tick: "
-//                         << tn->state.current_tick
-//                         << endl;
-
-                    robot.action.jump_speed = 0.0;
-                    robot.action.use_nitro = false;
-                    Vec3 del = defaultGoalKeeperPosition - robot.position;
-                    if (del.len() > 1) {
-                        del = del.normalized() * rules.ROBOT_MAX_GROUND_SPEED;
-                    }
-                    robot.action.target_velocity_x = del.getX();
-                    robot.action.target_velocity_y = del.getY();
-                    robot.action.target_velocity_z = del.getZ();
-                    robot.action_set = true;
-                    moveRobotAndAdjustNextNode(robot, childNode);
+                    cout << " Default---- Go 2 position (GOALKEEPER) " << defaultGoalKeeperPosition.toString()
+                         << " parentNode tick: "
+                         << tn->state.current_tick << "  robotid="<< robot.id
+                         << endl;
+                   
                 } else {
 
-                    Vec3 target = targetBallNode->state.ball.position;
+                    target = targetBallNode->state.ball.position;
+                    cout << " TArgt ball node position "<< target.toString()<< endl;
+                    cout<< " Robot current speed " << robot.velocity.toString() << endl;
+                    cout << " ball current pos "<< tn->state.ball.position.toString() << endl;
+                    target.setY(1.0);
 
-                    double radsum = robot.radius + targetBallNode->state.ball.radius;
-                    if (abs(target.getX() - robot.position.getX()) < radsum) {
-                        target = robot.position;
-                        target.setZ(target.getZ() - 2);
-                        if (abs(robot.position.getX()) < abs(targetBallNode->state.ball.position.getX()) + radsum) {
-                            if (robot.position.getX() < targetBallNode->state.ball.position.getX())
-                                target.setX(target.getX() - radsum * 2);
-                            else
-                                target.setX(target.getX() + radsum * 2);
+                    if (tn->state.ball.position.getZ() < robot.position.getZ() + 1 || target.getZ() < robot.position.getZ() + 1){
+                        double radsum = robot.radius + targetBallNode->state.ball.radius;
+                        if (abs(target.getX() - robot.position.getX()) < radsum) {
+                            target = robot.position;
+                            target.setZ(target.getZ() - 2);
+                            if (abs(robot.position.getX()) < abs(targetBallNode->state.ball.position.getX()) + radsum) {
+                                if (robot.position.getX() < targetBallNode->state.ball.position.getX())
+                                    target.setX(target.getX() - radsum * 2);
+                                else
+                                    target.setX(target.getX() + radsum * 2);
+                            } else {
+                                target.setX(0.0);
+                            }
                         } else {
-                            target.setX(0.0);
+                            target.setZ(target.getZ() - radsum * 2);
                         }
-                    } else {
-                        target.setZ(target.getZ() - radsum * 2);
                     }
+                    cout << " Default--- Go 2 ball LAST ATTACKER " << target.toString() << " parentNode tick: "
+                         << tn->state.current_tick << " robot id "<< robot.id
+                         << endl;
 
-
-
-//                    cout << " Default--- Go 2 ball " << target.toString() << " parentNode tick: "
-//                         << tn->state.current_tick
-//                         << endl;
-
-                    robot.action.jump_speed = 0.0;
-                    robot.action.use_nitro = false;
-
-                    Vec3 del = tn->state.ball.position - robot.position;
-                    if (del.len() > 1) {
-                        del = del.normalized() * rules.ROBOT_MAX_GROUND_SPEED;
-                    }
-                    robot.action.target_velocity_x = del.getX();
-                    robot.action.target_velocity_y = del.getY();
-                    robot.action.target_velocity_z = del.getZ();
-                    robot.action_set = true;
-                    moveRobotAndAdjustNextNode(robot, childNode);
                 }
 
+                robot.action.jump_speed = 0.0;
+                robot.action.use_nitro = false;
+                Vec3 del = target - robot.position;
+                if (del.len() > 1) {
+                    del = del.normalized() * rules.ROBOT_MAX_GROUND_SPEED;
+                }
+                robot.action.target_velocity_x = del.getX();
+                robot.action.target_velocity_y = del.getY();
+                robot.action.target_velocity_z = del.getZ();
+                robot.action_set = true;
+                moveRobotAndAdjustNextNode(robot, childNode);
             }
             tn = childNode;
         }
-
+        cout<< " ------ FREEE GOING -----"<<endl;
     }
 
-//    cout << " Finalization " << tn->state.current_tick << endl;
+    cout << " Finalization " << tn->state.current_tick << endl;
     for (SimulationEntity &se :tn->state.robots) {
         se.action_set = false;
     }
     tn = tn->parent;
-//    cout << "ACTIONS DONE on tick " << tn->state.current_tick << endl;
+    cout << "ACTIONS DONE on tick " << tn->state.current_tick << endl;
 
     if (tn->parent != NULL && tn->state.current_tick == on_collision_tick) {
-//        cout << " Ball position " << tn->state.ball.position.toString() << " on tick " << on_collision_tick << endl;
-        // found last node before collision node
+        cout << " Ball position " << tn->state.ball.position.toString() << " on tick " << on_collision_tick << endl;
+//         found last node before collision node
         int i = 0;
         for (; i < jumppos.size(); i++) {
             if (jumppos[i] > tn->state.ball.position.getY())
                 break;
         }
-//        cout << " Steps before " << i << endl;
+        cout << " Steps before " << i << endl;
         for (SimulationEntity &rob: tn->state.robots) {
             if (rob.id == attackerId) {
                 rob.action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED;
@@ -577,7 +574,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         for (; i > 1 && tn->parent != NULL; i--) {
             tn = tn->parent;
         }
-//        cout << " Jump on tick " << tn->state.current_tick << endl;
+        cout << " Jump on tick " << tn->state.current_tick << endl;
         for (SimulationEntity &rob: tn->state.robots) {
             if (rob.id == attackerId) {
                 rob.action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED;
