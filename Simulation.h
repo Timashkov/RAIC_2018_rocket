@@ -169,15 +169,15 @@ public:
 
     void checkAlternatives(shared_ptr<TreeNode> baseNode);
 
-    int checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 excludeTarget, int max_attempts);
+    JumpParams checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 excludeTarget, int max_attempts);
 
     Vec3 getHitPosition(SimulationEntity ball);
 
     void moveRobotAndAdjustNextNode(SimulationEntity &robot, TreeNode *childNode);
     
-    JumpParams getJumpParams(double hitPositionY);
+    JumpParams getJumpParams(const SimulationEntity &se, Vec3 target);
     
-    JumpParams getJumpParamsWithMax(double hitPosition);
+    JumpParams getJumpParamsWithMax(const SimulationEntity &se, Vec3 target);
 };
 
 #endif /* Simulation_h */
