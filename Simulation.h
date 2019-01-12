@@ -21,6 +21,15 @@
 
 using namespace model;
 
+struct JumpParams{
+    double initialVelocity = -1.0;
+    int jump_ticks = -1;
+    int run_ticks = -1;
+    
+    JumpParams(const double vel, const int t):initialVelocity(vel), jump_ticks(t), run_ticks(-1){}
+    JumpParams(const double vel, const int t, const int rt):initialVelocity(vel), jump_ticks(t), run_ticks(rt){}
+};
+
 class CollisionParams {
 public:
     CollisionParams(int t, SimulationEntity &anyEnt, SimulationEntity &rob) :
@@ -100,9 +109,6 @@ private:
     int attackerId;
     Vec3 attackerTarget;
 
-    Vec3 defaultGoalKeeperPosition;
-    Vec3 goalTarget;
-
     shared_ptr<TreeNode> baseNode;
     queue<shared_ptr<TreeNode>> processingNodes;
 
@@ -114,12 +120,15 @@ private:
     
     double ENEMY_GOAL_INACCESS_Z;
     double ENEMY_GOAL_INACCESS_X;
-
+    
+    Vec3 defaultGoalKeeperPosition;
+    Vec3 ENEMY_GOAL_TARGET;
+    
 public:
     Simulation() :
             inited(false),
             defaultGoalKeeperPosition(Vec3::None),
-            goalTarget(Vec3::None),
+            ENEMY_GOAL_TARGET(Vec3::None),
             attackerTarget(Vec3::None),
             current_tick(0),
             goalKeeperId(-1),
@@ -162,9 +171,13 @@ public:
 
     int checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 excludeTarget, int max_attempts);
 
-    Vec3 getHitPosition(Vec3 ball_moment_position);
+    Vec3 getHitPosition(SimulationEntity ball);
 
     void moveRobotAndAdjustNextNode(SimulationEntity &robot, TreeNode *childNode);
+    
+    JumpParams getJumpParams(double hitPositionY);
+    
+    JumpParams getJumpParamsWithMax(double hitPosition);
 };
 
 #endif /* Simulation_h */

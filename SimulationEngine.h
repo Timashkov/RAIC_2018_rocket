@@ -20,10 +20,13 @@ private:
 public:
     SimulationEngine(const model::Rules &rul) {
         rules = rul;
+        kb = (1.0/rul.BALL_MASS)/(1.0/rules.BALL_MASS + 1.0/rules.ROBOT_MASS);
     }
 
     ~SimulationEngine() {}
 
+    double kb;
+    
     void move(SimulationEntity &e, double delta_time);
 
     bool collide_entities(SimulationEntity &a, SimulationEntity &b);

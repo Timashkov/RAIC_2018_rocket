@@ -68,6 +68,22 @@ void blabla(Ball ball, Robot r1, Rules *rules) {
     checkAchievement(rob, bptarget, rules, first_attempt);
 }
 
+double jumpSpeed(double targetHeight, Rules * rules){
+    double dt = 1.0 / (rules->TICKS_PER_SECOND);
+    targetHeight = targetHeight - rules->ROBOT_RADIUS;
+    cout<< "Target height "<< targetHeight<<endl;
+    
+    double targetTime = sqrt(targetHeight * 2.0/ rules->GRAVITY);
+    cout << " Target time " << targetTime << endl;
+    
+    double jumpspeed = rules->GRAVITY * targetTime;
+    cout << " Jump speed "<< jumpspeed << endl;
+    
+    double ticksd = targetTime/dt;
+    int target_ticks = (int) ticksd;
+    cout << " Ticks "<< target_ticks << endl;
+    return jumpspeed;
+}
 
 void testRun1() {
     Simulation sim;
@@ -229,8 +245,11 @@ void testRun1() {
             testHeight += vel * dt - rules->GRAVITY * dt * dt / 2;
             vel -= rules->GRAVITY * dt;
 //        }
-        cout << "text height " << testHeight << endl;
+        cout << "text height " << testHeight << " on tick " << j<< endl;
     }
+    
+    
+   
 }
 /*text height 0.295833
 text height 0.533333
@@ -263,15 +282,15 @@ text height 3.78333
 text height 3.79583
 text height 3.8*/
 int main(int argc, char *argv[]) {
-        if (argc == 4) {
-            Runner runner(argv[1], argv[2], argv[3]);
-            runner.run();
-        } else {
-            Runner runner("127.0.0.1", "31001", "0000000000000000");
-            runner.run();
-        }
+//        if (argc == 4) {
+//            Runner runner(argv[1], argv[2], argv[3]);
+//            runner.run();
+//        } else {
+//            Runner runner("127.0.0.1", "31001", "0000000000000000");
+//            runner.run();
+//        }
 
-//    testRun1();
+    testRun1();
     return 0;
 }
 
