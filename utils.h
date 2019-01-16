@@ -41,18 +41,22 @@ public:
 
     inline void setZ(double a) { Z = a; }
 
-    inline Vec3 mul(double k) {
-
-        return Vec3(X * k, Y * k, Z * k);
+    inline void mulAndApply(double k) {
+        X *= k;
+        Y *= k;
+        Z *= k;
     }
 
-    inline Vec3 add(Vec3 &v) const {
-
-        return Vec3(X + v.getX(), Y + v.getY(), Z + v.getZ());
+    inline void addAndApply(const Vec3 &v) {
+        X += v.getX();
+        Y += v.getY();
+        Z += v.getZ();
     }
 
-    inline Vec3 sub(Vec3 &v) const {
-        return Vec3(X - v.getX(), Y - v.getY(), Z - v.getZ());
+    inline void subAndApply(const Vec3 &v) {
+        X -= v.getX();
+        Y -= v.getY();
+        Z -= v.getZ();
     }
 
     inline double len() const {

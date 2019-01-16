@@ -645,13 +645,15 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
 
 JumpParams Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 ballPosition, int max_attempts) {
 
-    cout<< "Chech achievement "<< rr1.position.toString() << " bp target "<< bptarget.toString() <<endl;
+    cout<< "Check achievement for robot on position"<< rr1.position.toString() <<endl<< "and bp target "<< bptarget.toString() <<endl;
+    cout << "Available delta time "<<max_attempts<<endl;
     
     
     bptarget.setY(1);
     Vec3 initial_delta = bptarget - rr1.position;
     if (delta_time * rules.MICROTICKS_PER_TICK * rules.ROBOT_MAX_GROUND_SPEED * max_attempts < initial_delta.len()) {
-        cout << " Can not be achieved"<<endl;
+        cout << " Can not be achieved , initial len "<<initial_delta.len() <<endl;
+        cout << "Available len "<<delta_time * rules.MICROTICKS_PER_TICK * rules.ROBOT_MAX_GROUND_SPEED * max_attempts<<endl;
         return JumpParams(-1,-1,-1);
     }
     
@@ -740,6 +742,19 @@ JumpParams Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec
             }
         }
     }
+    
+    JumpParams jp = getJumpParams(rr1, ballPosition);
+    if (jp.jump_ticks > 0){
+        if (max_attempts >= step + jp.jump_ticks){
+            jp.run_ticks = step;
+            return jp;
+        }
+        JumpParams jp_max = getJumpParamsWithMax(rr1, ballPosition);
+        if (jp_max.jump_ticks > 0 && max_attempts >= step + jp.jump_ticks){
+            jp_max.run_ticks = step;
+            return jp_max;
+        }
+    }
 
 //    if (max_attempts >= step + jp.jump_ticks){
 //        return step;
@@ -814,7 +829,7 @@ JumpParams Simulation::getJumpParams(const SimulationEntity &se, Vec3 target){
     double ticksd = targetTime * rules.TICKS_PER_SECOND;
     int target_ticks = (int) ticksd;
     
-    Vec3 sePos = se.velocity * ticksd;
+    Vec3 sePos = se.position + se.velocity * ticksd;
     sePos.setY(hitPositionY);
     
     if ((sePos-target).len()<rules.ROBOT_RADIUS + rules.BALL_RADIUS){

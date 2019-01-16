@@ -11,7 +11,7 @@
 
 void SimulationEngine::move(SimulationEntity &e, double delta_time) {
     e.velocity = clamp(e.velocity, rules.MAX_ENTITY_SPEED);
-    e.position = e.position + e.velocity * delta_time;
+    e.position.addAndApply(e.velocity * delta_time);
     e.position.setY(e.position.getY() - rules.GRAVITY * delta_time * delta_time / 2.0);
     e.velocity.setY(e.velocity.getY() - rules.GRAVITY * delta_time);
 }
@@ -31,8 +31,8 @@ bool SimulationEngine::collide_entities(SimulationEntity &a, SimulationEntity &b
         double delta_velocity = dot(velodelta, normal) + b.radius_change_speed - a.radius_change_speed;
         if (delta_velocity < 0.0) {
             Vec3 impulse = normal * (1.0 + random(rules.MIN_HIT_E, rules.MAX_HIT_E)) * delta_velocity;
-            a.velocity = a.velocity + (impulse * k_a);
-            b.velocity = b.velocity - (impulse * k_b);
+            a.velocity.addAndApply(impulse * k_a);
+            b.velocity.subAndApply(impulse * k_b);
         }
         return true;
     }

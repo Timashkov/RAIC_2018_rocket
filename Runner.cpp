@@ -215,9 +215,9 @@ void testRun1() {
     //    RoleParameters gk;
     //    vector<RoleParameters> forwards;
     //
-    //    sim.init(*game, *rules, gk, forwards);
-    //    game->current_tick=1;
-    //    sim.setTick(*game);
+        sim.init(*game, *rules, 1);
+        game->current_tick=1;
+        sim.setTick(*game);
 
 
 //    blabla(game->ball, r1, rules.get());
@@ -248,8 +248,13 @@ void testRun1() {
         cout << "text height " << testHeight << " on tick " << j<< endl;
     }
     
-    
-   
+    SimulationEntity se;
+    se.setPosition(Vec3(0.00, 1.00, -39.792046));
+    se.setVelocity(Vec3(0,0,0));
+   sim.checkAchievement(se
+                        , Vec3(-0.062784, 1.030923, -39.792046)
+                        , Vec3(-0.062784, 2.030923, -39.792046)
+                        , 12);
 }
 /*text height 0.295833
 text height 0.533333
@@ -282,15 +287,15 @@ text height 3.78333
 text height 3.79583
 text height 3.8*/
 int main(int argc, char *argv[]) {
-        if (argc == 4) {
-            Runner runner(argv[1], argv[2], argv[3]);
-            runner.run();
-        } else {
-            Runner runner("127.0.0.1", "31001", "0000000000000000");
-            runner.run();
-        }
+//        if (argc == 4) {
+//            Runner runner(argv[1], argv[2], argv[3]);
+//            runner.run();
+//        } else {
+//            Runner runner("127.0.0.1", "31001", "0000000000000000");
+//            runner.run();
+//        }
 
-//    testRun1();
+    testRun1();
     return 0;
 }
 
