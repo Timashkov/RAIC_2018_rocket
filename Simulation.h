@@ -114,7 +114,7 @@ private:
 
     Rules rules;
     Arena arena;
-    std::unique_ptr<SimulationEngine> engine;
+    
     double delta_time;
     double GOAL_THRESHOLD;
     
@@ -125,6 +125,7 @@ private:
     Vec3 ENEMY_GOAL_TARGET;
     
 public:
+    std::unique_ptr<SimulationEngine> engine;
     Simulation() :
             inited(false),
             defaultGoalKeeperPosition(Vec3::None),

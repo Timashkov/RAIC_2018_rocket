@@ -251,10 +251,19 @@ void testRun1() {
     SimulationEntity se;
     se.setPosition(Vec3(0.00, 1.00, -39.792046));
     se.setVelocity(Vec3(0,0,0));
-   sim.checkAchievement(se
-                        , Vec3(-0.062784, 1.030923, -39.792046)
-                        , Vec3(-0.062784, 2.030923, -39.792046)
-                        , 12);
+    se.touch = true;
+//   sim.checkAchievement(se
+//                        , Vec3(-0.062784, 1.030923, -39.792046)
+//                        , Vec3(-0.062784, 2.030923, -39.792046)
+//                        , 12);
+
+    se.action.target_velocity_x = 10;
+    se.action.target_velocity_y = 10;
+    se.action.target_velocity_z = 10;
+    se.setNormal(r1.touch_normal_x, r1.touch_normal_y, r1.touch_normal_z);
+    for (int i = 0; i < 100; i++)
+        sim.engine->moveRobot(se, 1.0/6000.0);
+    cout<< se.velocity.toString() << endl;
 }
 /*text height 0.295833
 text height 0.533333
