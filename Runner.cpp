@@ -134,7 +134,7 @@ void testRun1() {
 
     game->ball = Ball();
     game->ball.x = 0.0;
-    game->ball.y = 1.0;
+    game->ball.y = 2.6033456643281077;
     game->ball.z = 0.0;
     game->ball.velocity_x = 1.0;
     game->ball.velocity_y = 0.0;
@@ -145,9 +145,9 @@ void testRun1() {
     Robot r1 = Robot();
     r1.id = 1;
     r1.player_id = 0;
-    r1.x = 7.856392606191905;
+    r1.x = -12.038927;
     r1.y = 1.0;
-    r1.z = -18.39231076339711;
+    r1.z = -15.9707305641975;
     r1.velocity_x = -1.0;
     r1.velocity_y = 0.0;
     r1.velocity_z = 0.0;
@@ -261,8 +261,10 @@ void testRun1() {
     se.action.target_velocity_y = 10;
     se.action.target_velocity_z = 10;
     se.setNormal(r1.touch_normal_x, r1.touch_normal_y, r1.touch_normal_z);
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 100; i++){
         sim.engine->moveRobot(se, 1.0/6000.0);
+        sim.engine->collide_with_arena(se);
+    }
     cout<< se.velocity.toString() << endl;
 }
 /*text height 0.295833
@@ -296,15 +298,15 @@ text height 3.78333
 text height 3.79583
 text height 3.8*/
 int main(int argc, char *argv[]) {
-//        if (argc == 4) {
-//            Runner runner(argv[1], argv[2], argv[3]);
-//            runner.run();
-//        } else {
-//            Runner runner("127.0.0.1", "31001", "0000000000000000");
-//            runner.run();
-//        }
+        if (argc == 4) {
+            Runner runner(argv[1], argv[2], argv[3]);
+            runner.run();
+        } else {
+            Runner runner("127.0.0.1", "31001", "0000000000000000");
+            runner.run();
+        }
 
-    testRun1();
+//    testRun1();
     return 0;
 }
 

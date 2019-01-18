@@ -60,10 +60,6 @@ public:
             robots(source.robots),
             nitro_packs(source.nitro_packs),
             current_tick(source.current_tick),
-//            ball_collision(source.ball_collision),
-//            robots_collision(source.robots_collision),
-//            ball_wall_collision(source.ball_wall_collision),
-//            distances(source.distances),
             ballHitPosition(Vec3::None),
             bounty(0) {}
 
@@ -73,12 +69,8 @@ public:
     vector<SimulationEntity> robots;
     vector<SimulationEntity> nitro_packs;
     int current_tick;
-//    vector<CollisionParams> ball_collision;
-//    vector<CollisionParams> robots_collision;
-//    vector<Vec3> ball_wall_collision;
     int bounty;
     Vec3 ballHitPosition;
-//    vector<double> distances;
 };
 
 class TreeNode {

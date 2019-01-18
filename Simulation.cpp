@@ -645,15 +645,15 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
 
 JumpParams Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 ballPosition, int max_attempts) {
 
-    cout<< "Check achievement for robot on position"<< rr1.position.toString() <<endl<< "and bp target "<< bptarget.toString() <<endl;
+    cout << "## Check achievement for robot on position"<< rr1.position.toString() <<endl<< "and bp target "<< bptarget.toString() <<endl;
     cout << "Available delta time "<<max_attempts<<endl;
-    
     
     bptarget.setY(1);
     Vec3 initial_delta = bptarget - rr1.position;
     if (delta_time * rules.MICROTICKS_PER_TICK * rules.ROBOT_MAX_GROUND_SPEED * max_attempts < initial_delta.len()) {
-        cout << " Can not be achieved , initial len "<<initial_delta.len() <<endl;
-        cout << "Available len "<<delta_time * rules.MICROTICKS_PER_TICK * rules.ROBOT_MAX_GROUND_SPEED * max_attempts<<endl;
+        cout << " ->Can not be achieved , initial len "<<initial_delta.len() <<endl;
+        cout << " ->Available len "<<delta_time * rules.MICROTICKS_PER_TICK * rules.ROBOT_MAX_GROUND_SPEED * max_attempts<<endl;
+        cout << " ##->Return JumpParams(-1,-1,-1)"<<endl;
         return JumpParams(-1,-1,-1);
     }
     
@@ -670,9 +670,7 @@ JumpParams Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec
         rr1.action.target_velocity_y = action_target_velocity.getY();
         rr1.action.target_velocity_z = action_target_velocity.getZ();
         
-        
-        
-        if (rr1.velocity.len() <= rules.ROBOT_MAX_GROUND_SPEED - 0.02 || rr1.velocity.normalized() != action_target_velocity_normed){
+//        if (rr1.velocity.len() <= rules.ROBOT_MAX_GROUND_SPEED - 0.02 || rr1.velocity.normalized() != action_target_velocity_normed){
             for (int j = 0; j < rules.MICROTICKS_PER_TICK; j++) {
                 engine->moveRobot(rr1, delta_time);
                 
@@ -686,81 +684,111 @@ JumpParams Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec
                     collided = true;
                 }
                 
-//                Vec3 collision_normal = engine->collide_with_arena(rr1);
-//                if (collision_normal == Vec3::None) {
-//                    rr1.touch = false;
-//                } else {
-//                    rr1.touch = true;
-//                    rr1.touch_normal = collision_normal;
-//                }
-                if (rr1.velocity.getY() == -0.005)
-                    rr1.velocity.setY(0);
-                if (rr1.position.getY()< 1)
-                    rr1.position.setY(1);
+                Vec3 collision_normal = engine->collide_with_arena(rr1);
+                if (collision_normal == Vec3::None) {
+                    rr1.touch = false;
+                } else {
+                    rr1.touch = true;
+                    rr1.touch_normal = collision_normal;
+                }
+//                if (rr1.velocity.getY() == -0.005)
+//                    rr1.velocity.setY(0);
+//                if (rr1.position.getY()< 1)
+//                    rr1.position.setY(1);
             }
             
             cout << "Velocity after increase " << rr1.velocity.toString() << endl;
             cout << "Velocity normed " << rr1.velocity.normalized().toString() << endl;
             cout << "Position after increase " << rr1.position.toString() << endl;
+            cout << "Collided : " << collided << endl;
             step++;
-            
+            JumpParams jp = getJumpParams(rr1, ballPosition);
+                    if (jp.jump_ticks > 0){
+                        cout << " (1) jp.jump_ticks>0 "<<endl;
+                        if (max_attempts >= step + jp.jump_ticks){
+                            jp.run_ticks = step;
+                            cout << " ##->Return JumpParams ticks "<<jp.jump_ticks <<endl;
+                            return jp;
+                        }
+                        JumpParams jp_max = getJumpParamsWithMax(rr1, ballPosition);
+                        if (jp_max.jump_ticks > 0 && max_attempts >= step + jp.jump_ticks){
+                            jp_max.run_ticks = step;
+                            cout << " ##->Return JumpParams max jump ticks "<<jp_max.jump_ticks <<endl;
+                            return jp_max;
+                        }
+                    }
+            cout<<endl;
         }
-        JumpParams jp = getJumpParams(rr1, ballPosition);
-        if (jp.jump_ticks > 0){
-            if (max_attempts >= step + jp.jump_ticks){
-                jp.run_ticks = step;
-                return jp;
-            }
-            JumpParams jp_max = getJumpParamsWithMax(rr1, ballPosition);
-            if (jp_max.jump_ticks > 0 && max_attempts >= step + jp.jump_ticks){
-                jp_max.run_ticks = step;
-                return jp_max;
-            }
-        }
-        if (rr1.velocity.len() > rules.ROBOT_MAX_GROUND_SPEED - 0.02 && rr1.velocity.normalized() == action_target_velocity_normed) {
-            double rest_time = ((rr1.position - bptarget).len() /
-                                (rules.ROBOT_MAX_GROUND_SPEED * delta_time * rules.MICROTICKS_PER_TICK));
-            cout << "Rest Time " << rest_time << endl;
-            step += rest_time;
-            if (rest_time < jp.jump_ticks){
-                JumpParams jp_max = getJumpParamsWithMax(rr1, ballPosition);
-                if (rest_time < jp_max.jump_ticks){
-                // not enough time for jump
-                    return JumpParams(-1,-1,-1);
-                    
-                } else {
-                    jp_max.run_ticks = step;
-                    return jp_max;
-                    
-                }
-            }
-            cout << "Steps " << step << endl;
-            if (max_attempts >= step){
-                jp.run_ticks = step;
-                return jp;
-                
-            }
-        }
-    }
-    
-    JumpParams jp = getJumpParams(rr1, ballPosition);
-    if (jp.jump_ticks > 0){
-        if (max_attempts >= step + jp.jump_ticks){
-            jp.run_ticks = step;
-            return jp;
-        }
-        JumpParams jp_max = getJumpParamsWithMax(rr1, ballPosition);
-        if (jp_max.jump_ticks > 0 && max_attempts >= step + jp.jump_ticks){
-            jp_max.run_ticks = step;
-            return jp_max;
-        }
-    }
+//        JumpParams jp = getJumpParams(rr1, ballPosition);
+//        if (jp.jump_ticks > 0){
+//            cout << " (1) jp.jump_ticks>0 "<<endl;
+//            if (max_attempts >= step + jp.jump_ticks){
+//                jp.run_ticks = step;
+//                cout << " ##->Return JumpParams ticks "<<jp.jump_ticks <<endl;
+//                return jp;
+//            }
+//            JumpParams jp_max = getJumpParamsWithMax(rr1, ballPosition);
+//            if (jp_max.jump_ticks > 0 && max_attempts >= step + jp.jump_ticks){
+//                jp_max.run_ticks = step;
+//                cout << " ##->Return JumpParams max jump ticks "<<jp_max.jump_ticks <<endl;
+//                return jp_max;
+//            }
+//        }
+//        if (rr1.velocity.len() > rules.ROBOT_MAX_GROUND_SPEED - 0.02 && rr1.velocity.normalized() == action_target_velocity_normed) {
+//            double rest_ticks_count = ((rr1.position - bptarget).len() /
+//                                (rules.ROBOT_MAX_GROUND_SPEED * delta_time * rules.MICROTICKS_PER_TICK));
 
-//    if (max_attempts >= step + jp.jump_ticks){
-//        return step;
-//
+//            cout << "Rest Time " << rest_ticks_count << endl;
+//            int rest_time = (int) rest_ticks_count;
+//            step += rest_time;
+//            rr1.position.addAndApply(rr1.velocity * ((double) rest_time )/ rules.TICKS_PER_SECOND);
+//            jp = getJumpParams(rr1, ballPosition);
+
+//            if (rest_time < jp.jump_ticks){
+
+//                JumpParams jp_max = getJumpParamsWithMax(rr1, ballPosition);
+//                if (rest_time < jp_max.jump_ticks){
+//                // not enough time for jump
+//                    cout << " ##->Return JumpParams not enough time "<<endl;
+//                    return JumpParams(-1,-1,-1);
+                    
+//                } else {
+//                    jp_max.run_ticks = step;
+//                    cout << " ##->(2)Return JumpParams "<<jp.jump_ticks <<endl;
+//                    return jp_max;
+                    
+//                }
+//            }
+//            cout << "Steps " << step << endl;
+//            if (max_attempts >= step){
+//                cout << " ##->(3)Return JumpParams "<<jp.jump_ticks <<endl;
+//                jp.run_ticks = step;
+//                return jp;
+                
+//            }
+//        }
 //    }
-    return JumpParams(-1,-1,-1);
+//    cout << " ->>Nothing after calc"<<endl;
+//    JumpParams jp = getJumpParams(rr1, ballPosition);
+//    if (jp.jump_ticks > 0){
+//        if (max_attempts >= step + jp.jump_ticks){
+//            jp.run_ticks = step;
+//            return jp;
+//        }
+//        JumpParams jp_max = getJumpParamsWithMax(rr1, ballPosition);
+//        if (jp_max.jump_ticks > 0 && max_attempts >= step + jp.jump_ticks){
+//            jp_max.run_ticks = step;
+//            return jp_max;
+//        }
+//    }
+
+    if (max_attempts <= step){
+        cout<< " max_attempts >= step "<<endl;
+        return JumpParams(-1,-1,-1);
+
+    }
+    cout<< "Steps "<<step<< " with max attampts " << max_attempts<< endl;
+    return JumpParams(0,0,step);
 }
 
 Vec3 Simulation::getHitPosition(SimulationEntity ball) {
@@ -828,11 +856,14 @@ JumpParams Simulation::getJumpParams(const SimulationEntity &se, Vec3 target){
     }
     double ticksd = targetTime * rules.TICKS_PER_SECOND;
     int target_ticks = (int) ticksd;
+    if (target_ticks < ticksd)
+        target_ticks++;
     
-    Vec3 sePos = se.position + se.velocity * ticksd;
+    Vec3 sePos = se.position + se.velocity * target_ticks / rules.TICKS_PER_SECOND;
+    cout<< " Start position " << se.position.toString() << " after fly "<< sePos.toString() << endl;
     sePos.setY(hitPositionY);
     
-    if ((sePos-target).len()<rules.ROBOT_RADIUS + rules.BALL_RADIUS){
+    if ((target - sePos).len()<rules.ROBOT_RADIUS+rules.BALL_RADIUS){
         
         cout << " Ticks "<< target_ticks << endl;
         JumpParams params(jumpspeed, target_ticks);
@@ -871,7 +902,7 @@ JumpParams Simulation::getJumpParamsWithMax(const SimulationEntity &se, Vec3 tar
             Vec3 sePos = se.velocity * j;
             sePos.setY(hitPositionY);
             
-            if ((sePos-target).len()<rules.ROBOT_RADIUS + rules.BALL_RADIUS){
+            if ((sePos-target).len()<rules.ROBOT_RADIUS+rules.BALL_RADIUS){
             cout << "text height " << h << " on tick " << j<< endl;
                 return JumpParams(rules.ROBOT_MAX_JUMP_SPEED, j);
                 
