@@ -60,7 +60,11 @@ public:
     }
 
     inline double len() const {
-        return sqrt(X * X + Y * Y + Z * Z);
+        return sqrt(lenPowered2());
+    }
+    
+    inline double lenPowered2() const {
+        return X * X + Y * Y + Z * Z;
     }
 
     inline Vec3 normalized() const {

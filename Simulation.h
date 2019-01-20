@@ -22,12 +22,14 @@
 using namespace model;
 
 struct JumpParams{
-    double initialVelocity = -1.0;
-    int jump_ticks = -1;
-    int run_ticks = -1;
-    
-    JumpParams(const double vel, const int t):initialVelocity(vel), jump_ticks(t), run_ticks(-1){}
-    JumpParams(const double vel, const int t, const int rt):initialVelocity(vel), jump_ticks(t), run_ticks(rt){}
+    double initialVelocityY;
+    int jump_ticks;
+    int jump_micros;
+    double fullTimeSec;
+    JumpParams():initialVelocityY(-1), jump_ticks(-1), jump_micros(-1), fullTimeSec(-1.0){}
+    JumpParams(const double velY, const int t, const int micros):initialVelocityY(velY), jump_ticks(t), jump_micros(micros){
+        fullTimeSec = ((double)jump_ticks)/60.0 + ((double)jump_micros)/6000.0;
+    }
 };
 
 class CollisionParams {
@@ -53,14 +55,13 @@ public:
 
 class State {
 public:
-    State() : current_tick(0), bounty(0), ballHitPosition(Vec3::None) {};
+    State() : current_tick(0), bounty(0) {};
 
     State(const State &source) :
             ball(source.ball),
             robots(source.robots),
             nitro_packs(source.nitro_packs),
             current_tick(source.current_tick),
-            ballHitPosition(Vec3::None),
             bounty(0) {}
 
     ~State() {};
@@ -70,7 +71,6 @@ public:
     vector<SimulationEntity> nitro_packs;
     int current_tick;
     int bounty;
-    Vec3 ballHitPosition;
 };
 
 class TreeNode {
@@ -99,7 +99,6 @@ private:
     int goalKeeperId;
 
     int attackerId;
-    Vec3 attackerTarget;
 
     shared_ptr<TreeNode> baseNode;
     queue<shared_ptr<TreeNode>> processingNodes;
@@ -122,7 +121,6 @@ public:
             inited(false),
             defaultGoalKeeperPosition(Vec3::None),
             ENEMY_GOAL_TARGET(Vec3::None),
-            attackerTarget(Vec3::None),
             current_tick(0),
             goalKeeperId(-1),
             delta_time(0.0) {
@@ -152,8 +150,6 @@ public:
 
     inline TreeNode *getBaseNode() const { return baseNode.get(); };
 
-    void calculateNodeBounty(shared_ptr<TreeNode> shared_ptr);
-
     bool isBallDirectionToGoal(const SimulationEntity &ball, bool myGoal);
 
     void setInitialState(const Game &g, State &st);
@@ -162,15 +158,15 @@ public:
 
     void checkAlternatives(shared_ptr<TreeNode> baseNode);
 
-    JumpParams checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 excludeTarget, int max_attempts);
+    bool checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 excludeTarget, int max_attempts, vector<SimulationEntity>& route);
 
-    Vec3 getHitPosition(SimulationEntity ball);
+    Vec3 getHitPosition(SimulationEntity ball, SimulationEntity robot);
 
     void moveRobotAndAdjustNextNode(SimulationEntity &robot, TreeNode *childNode);
     
-    JumpParams getJumpParams(const SimulationEntity &se, Vec3 target);
+    JumpParams getJumpParams(Vec3 targetPoint, double targetVelocityY) const;
     
-    JumpParams getJumpParamsWithMax(const SimulationEntity &se, Vec3 target);
+//    JumpParams getJumpParamsWithMax(Vec3 targetPoint, Vec3 targetVelocity);
 };
 
 #endif /* Simulation_h */
