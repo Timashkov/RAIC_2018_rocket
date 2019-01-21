@@ -164,9 +164,8 @@ public:
 
     void moveRobotAndAdjustNextNode(SimulationEntity &robot, TreeNode *childNode);
     
-    JumpParams getJumpParams(Vec3 targetPoint, double targetVelocityY) const;
+    JumpParams getJumpParams(Vec3 targetPoint, bool useMaxVelocity) const;
     
-//    JumpParams getJumpParamsWithMax(Vec3 targetPoint, Vec3 targetVelocity);
 };
 
 #endif /* Simulation_h */
