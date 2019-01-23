@@ -18,14 +18,14 @@ void blabla(Ball ball, Robot r1, Rules *rules, Simulation& sim) {
     rob.touch_normal = Vec3(r1.touch_normal_x, r1.touch_normal_y, r1.touch_normal_z);
     rob.position = Vec3(r1.x, r1.y, r1.z);
 
-    int first_attempt = 49;
+    int first_attempt = 46;
 
     cout << " Ball initial position "<< seBall.position.toString()<<endl;
     Vec3 bptarget = sim.getHitPosition(seBall, rob);
     cout << " Hit position "<< bptarget.toString() << endl;
     for ( ; first_attempt < 60; first_attempt++){
         vector<SimulationEntity> route;
-        if (sim.checkAchievement(rob, bptarget, seBall.position, first_attempt, route)){
+        if (sim.checkAchievement(rob, bptarget, first_attempt, route)){
             cout << endl << " Ticks enough "<< first_attempt << endl << endl;
             return;
         }
@@ -190,7 +190,15 @@ void testRun1() {
         sim.setTick(*game);
 
 
-    blabla(game->ball,r1, rules.get(), sim);
+    //blabla(game->ball,r1, rules.get(), sim);
+    vector<SimulationEntity> route;
+    SimulationEntity rr1;
+    rr1.setNormal(Vec3(0,1,0));
+    rr1.touch = true;
+    rr1.setVelocity(Vec3(0,0,0));
+    rr1.setPosition(Vec3(9.147315, 1, -40));
+    
+    sim.checkAchievement(rr1, Vec3(9.212919, 1.261145, -39.912168),  46, route);
 /*
 
     cout << " start speed " << rules->ROBOT_MAX_JUMP_SPEED << endl;
@@ -237,10 +245,6 @@ void testRun1() {
     }
     cout<< se.velocity.toString() << endl;*/
     
-    
-    JumpParams jp = sim.getJumpParams(Vec3(0, 2.596986, -2.828427), false);
-    cout << jp.jump_ticks << " -- " <<jp.jump_micros<<" -- "<< jp.initialVelocityY <<endl;
-    
 }
 /*text height 0.295833
 text height 0.533333
@@ -273,15 +277,15 @@ text height 3.78333
 text height 3.79583
 text height 3.8*/
 int main(int argc, char *argv[]) {
-//        if (argc == 4) {
-//            Runner runner(argv[1], argv[2], argv[3]);
-//            runner.run();
-//        } else {
-//            Runner runner("127.0.0.1", "31001", "0000000000000000");
-//            runner.run();
-//        }
+        if (argc == 4) {
+            Runner runner(argv[1], argv[2], argv[3]);
+            runner.run();
+        } else {
+            Runner runner("127.0.0.1", "31001", "0000000000000000");
+            runner.run();
+        }
 
-    testRun1();
+//    testRun1();
     return 0;
 }
 

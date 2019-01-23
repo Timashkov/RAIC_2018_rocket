@@ -111,6 +111,7 @@ private:
     
     double ENEMY_GOAL_INACCESS_Z;
     double ENEMY_GOAL_INACCESS_X;
+    double ENEMY_GOAL_SHADOW_CORNER;
     
     Vec3 defaultGoalKeeperPosition;
     Vec3 ENEMY_GOAL_TARGET;
@@ -158,11 +159,11 @@ public:
 
     void checkAlternatives(shared_ptr<TreeNode> baseNode);
 
-    bool checkAchievement(SimulationEntity rr1, Vec3 bptarget, Vec3 excludeTarget, int max_attempts, vector<SimulationEntity>& route);
+    bool checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_attempts, vector<SimulationEntity>& route);
 
     Vec3 getHitPosition(SimulationEntity ball, SimulationEntity robot);
 
-    void moveRobotAndAdjustNextNode(SimulationEntity &robot, TreeNode *childNode);
+    void moveRobotAndAdjustNextNode(SimulationEntity robot, TreeNode *childNode);
     
     JumpParams getJumpParams(Vec3 targetPoint, bool useMaxVelocity) const;
     
