@@ -37,6 +37,8 @@ void Simulation::init(const Game &g, const Rules &rul, const int &goal_keeper_id
     ENEMY_GOAL_INACCESS_X = rules.arena.width / 2.0 - rules.arena.corner_radius;
     
     ENEMY_GOAL_SHADOW_CORNER = ENEMY_GOAL_INACCESS_X + rules.arena.depth / 2.0 - rules.BALL_RADIUS;
+    dist_k = sqrt((rules.BALL_RADIUS + rules.ROBOT_RADIUS) * (rules.BALL_RADIUS + rules.ROBOT_RADIUS) -
+                         (rules.BALL_RADIUS - rules.ROBOT_RADIUS) * (rules.BALL_RADIUS - rules.ROBOT_RADIUS));
 }
 
 void Simulation::setInitialState(const Game &g, State &st) {
@@ -399,9 +401,16 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
     } else {
         cout << " +++++++++ FREE GOING +++++++++++"<<endl;
         TreeNode *targetBallNode = tn;
+        bool allTimeFly = true;
+
         for (int j = 0; j < 15; j++) {
             targetBallNode = targetBallNode->children[tn->children.size() - 1].get();
+            if ( tn->state.ball.position.getY() <= rules.ROBOT_RADIUS * 2 + rules.BALL_RADIUS){
+                allTimeFly = false;
+                
+            }
         }
+       
         for (int i = 0; i < 15; i++) {
             TreeNode *childNode = tn->children[tn->children.size() - 1].get();
             for (SimulationEntity &robot: tn->state.robots) {
@@ -417,7 +426,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                             target.setX(x);
                         }
                     }
-                    if (tn->state.ball.position.getY() <= rules.ROBOT_RADIUS * 2 + rules.BALL_RADIUS){
+                    if (!allTimeFly){
                         if (tn->state.ball.position.getZ() < robot.position.getZ() + rules.BALL_RADIUS ){
                             if (abs(target.getX() - robot.position.getX()) < radsum) {
                                 target = robot.position;
@@ -440,15 +449,13 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     cout << " ball current pos "<< tn->state.ball.position.toString() << endl;
                     target.setY(1.0);
                     
-                    target.setZ(target.getZ() - rules.BALL_RADIUS * 2);
-                    
                     cout << " Default--- Go 2 ball LAST ATTACKER " << target.toString() << " parentNode tick: "
                     << tn->state.current_tick << " robot id "<< robot.id
                     << endl;
                     
                     //TODO: check for ball Y
-                    if (tn->state.ball.position.getY() <= rules.ROBOT_RADIUS * 2 + rules.BALL_RADIUS){
-                        
+                    if (!allTimeFly){
+                        target.setZ(target.getZ() - rules.BALL_RADIUS * 2);
                         if (tn->state.ball.position.getZ() < robot.position.getZ() + 1 || target.getZ() < robot.position.getZ() + 1){
                             if (abs(target.getX() - robot.position.getX()) < radsum) {
                                 target = robot.position;
@@ -472,7 +479,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                 robot.action.jump_speed = 0.0;
                 robot.action.use_nitro = false;
                 Vec3 del = target - robot.position;
-                if (del.len() > 1) {
+                if (del.len() > 1 && i < 10) {
                     del = del.normalized() * rules.ROBOT_MAX_GROUND_SPEED;
                 }
                 robot.action.target_velocity_x = del.getX();
@@ -517,7 +524,7 @@ bool Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_a
     //TODO: find correct tv
     Vec3 tv = initial_delta.normalized();
     tv.mulAndApply(rules.ROBOT_MAX_GROUND_SPEED);
-    JumpParams jp = getJumpParams(bptarget, false || bptarget.getZ()< -rules.arena.depth / 4.0 );
+    JumpParams jp = getJumpParams(bptarget, false || bptarget.getZ()< -rules.arena.depth / 4.0 || bptarget.getY() > rules.ROBOT_RADIUS*2);
     if (jp.jump_ticks == -1){
         jp = getJumpParams(bptarget, true);
         if (jp.jump_ticks == -1){
@@ -703,27 +710,38 @@ Vec3 Simulation::getHitPosition(SimulationEntity ball, SimulationEntity robot) {
 //        return Vec3::None;
 //    }
 //    
-    double dist_k = sqrt((rules.BALL_RADIUS + rules.ROBOT_RADIUS) * (rules.BALL_RADIUS + rules.ROBOT_RADIUS) -
-                         (rules.BALL_RADIUS - rules.ROBOT_RADIUS) * (rules.BALL_RADIUS - rules.ROBOT_RADIUS));
+    
     cout << "Dist_K "<<dist_k<<endl;
+    Vec3 ballVelNormilized = ball.velocity.normalized();
+    cout << "Ball velocity "<< ballVelNormilized.toString()<< endl;
+    cout << "Ball position "<< ball.position.toString()<< endl;
+   
     
-    if (ball.velocity.getZ() < 0 ){
-        if ( ball.position.getY()< rules.ROBOT_RADIUS*1.75 + rules.BALL_RADIUS){
-            
-            double XZ =sqrt((rules.ROBOT_RADIUS + rules.BALL_RADIUS)*(rules.ROBOT_RADIUS + rules.BALL_RADIUS)- (ball.position.getY()- rules.ROBOT_RADIUS)*(ball.position.getY()- rules.ROBOT_RADIUS));
-            
-            return Vec3(ball.position.getX() , 1, ball.position.getZ()-XZ);
-        }
-    }
+//    if (ball.velocity.getZ() < 0 ){
+//        if ( ball.position.getY()> rules.ROBOT_RADIUS*1.75 + rules.BALL_RADIUS){
+//            double radsum = rules.ROBOT_RADIUS + rules.BALL_RADIUS;
+//            double dY = ball.position.getY() - rules.ROBOT_RADIUS;
+//            double XZ = sqrt( radsum * radsum - dY * dY );
+//
+//            return Vec3(ball.position.getX() , 1, ball.position.getZ() - XZ );
+//        }
+//    }
+
     
     
-    if (ball.velocity.getZ() < 0 && abs(ball.position.getZ()) > abs(GOAL_THRESHOLD)){
+    if (ball.velocity.getZ() < 0 && abs(ball.position.getZ()) > abs(GOAL_THRESHOLD) && ball.position.getZ() <= 0){
         cout << "Ball goes to my goal "<<endl;
         Vec3 myGoalDirection = robot.position - ball.position;
-        myGoalDirection.setY(0);
+        cout << "My Goal direction "<< myGoalDirection.toString() << endl;
+        myGoalDirection.normAndApply();
+        cout << "My Goal direction normilized "<< myGoalDirection.toString() << endl;
+        ballVelNormilized.setY(0);
+        ballVelNormilized.addAndApply(myGoalDirection);
+        ballVelNormilized.normAndApply();
+        ballVelNormilized.mulAndApply(dist_k);
+        
 
-        Vec3 hitPosition = ball.position + (myGoalDirection.normalized() * dist_k);
-        hitPosition.setY(ball.position.getY() - rules.ROBOT_RADIUS);
+        Vec3 hitPosition = ball.position + ballVelNormilized;
         
         return hitPosition;
     }
@@ -731,37 +749,58 @@ Vec3 Simulation::getHitPosition(SimulationEntity ball, SimulationEntity robot) {
     /** TODO: normalize vectors before angle compare **/
     
     Vec3 goalDirection = ENEMY_GOAL_TARGET - ball.position;
-    double lenBG2 = goalDirection.lenPowered2();
-    double lenRB2 = (ball.position - robot.position).lenPowered2();
-    double lenRG2 = (ENEMY_GOAL_TARGET - robot.position).lenPowered2();
-    double lenRBBG2 = (sqrt(lenRB2) + sqrt(lenBG2))*(sqrt(lenRB2) + sqrt(lenBG2));
-
-    if (abs(lenRG2 - (lenRB2 + lenBG2)) < abs(lenRG2 - lenRBBG2) && abs(goalDirection.getZ()) < ENEMY_GOAL_INACCESS_Z){
-        // looks like angle too big
-        // attack to mirrored position
-        if (ball.position.getX() < robot.position.getX()){
-
-            ENEMY_GOAL_TARGET.setX(rules.arena.width);
-            cout << "Update ENEMY_GOAL_TARGET 1 "<<ENEMY_GOAL_TARGET.toString()<<endl;
-        } else {
-            ENEMY_GOAL_TARGET.setX(-rules.arena.width);
-            cout << "Update ENEMY_GOAL_TARGET 2 "<<ENEMY_GOAL_TARGET.toString()<<endl;
-        }
-        goalDirection = ENEMY_GOAL_TARGET - ball.position - ball.velocity;
-    }
+//    double lenBG2 = goalDirection.lenPowered2();
+//    double lenRB2 = (ball.position - robot.position).lenPowered2();
+//    double lenRG2 = (ENEMY_GOAL_TARGET - robot.position).lenPowered2();
+//    double lenRBBG2 = (sqrt(lenRB2) + sqrt(lenBG2))*(sqrt(lenRB2) + sqrt(lenBG2));
+//
+//    if (abs(lenRG2 - (lenRB2 + lenBG2)) < abs(lenRG2 - lenRBBG2) && abs(goalDirection.getZ()) < ENEMY_GOAL_INACCESS_Z){
+//        // looks like angle too big
+//        // attack to mirrored position
+//        if (ball.position.getX() < robot.position.getX()){
+//
+//            ENEMY_GOAL_TARGET.setX(rules.arena.width);
+//            cout << "Update ENEMY_GOAL_TARGET 1 "<<ENEMY_GOAL_TARGET.toString()<<endl;
+//        } else {
+//            ENEMY_GOAL_TARGET.setX(-rules.arena.width);
+//            cout << "Update ENEMY_GOAL_TARGET 2 "<<ENEMY_GOAL_TARGET.toString()<<endl;
+//        }
+//        goalDirection = ENEMY_GOAL_TARGET - ball.position;
+//    }
     cout << "Goal direction "<<goalDirection.toString()<<endl;
     //attack goal directly
     goalDirection.setY(0);
     
-    Vec3 hitPosition = ball.position - (goalDirection.normalized() * dist_k);
+    goalDirection.normAndApply();
+    ballVelNormilized.setY(0);
+    cout << "Goal direction "<<goalDirection.toString()<<endl;
+    goalDirection.subAndApply(ballVelNormilized);
+    cout << "Goal direction "<<goalDirection.toString()<<endl;
+    goalDirection.normAndApply();
+    cout << "Goal direction "<<goalDirection.toString()<<endl;
+    goalDirection.mulAndApply(2.9);
+    cout << "Goal direction "<<goalDirection.toString()<<endl;
+    
+    Vec3 hitPosition = ball.position - goalDirection;
     if (abs(hitPosition.getX()) > rules.arena.width/2 - rules.ROBOT_RADIUS){
         cout << "Too big X" << endl;
         return Vec3::None;
     }
     
+        Vec3 nd = (ball.position - robot.position).normalized();
+        nd.mulAndApply(3);
+        Vec3 nnd = Vec3(nd.getX(), 0, nd.getY());
+        goalDirection.setY(0);
+        goalDirection.normAndApply();
+        goalDirection.mulAndApply(nnd.len());
+        goalDirection.addAndApply(Vec3(0, nd.getY(), 0));
+        hitPosition = ball.position - goalDirection;
+        cout << "hit position' "<<hitPosition.toString()<<endl;
+    
+    
     cout << "Initial hit position "<<hitPosition.toString()<<endl;
-    hitPosition.setY(ball.position.getY() - rules.ROBOT_RADIUS);
-    cout << "Hit position updated "<<hitPosition.toString()<<endl;
+//    hitPosition.setY(ball.position.getY() - rules.ROBOT_RADIUS);
+//    cout << "Hit position updated "<<hitPosition.toString()<<endl;
     return hitPosition;
 }
 

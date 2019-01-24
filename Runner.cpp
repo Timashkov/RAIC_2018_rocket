@@ -198,7 +198,94 @@ void testRun1() {
     rr1.setVelocity(Vec3(0,0,0));
     rr1.setPosition(Vec3(9.147315, 1, -40));
     
-    sim.checkAchievement(rr1, Vec3(9.212919, 1.261145, -39.912168),  46, route);
+    SimulationEntity seb;
+    
+    seb.setPosition(game->ball.x, game->ball.y, game->ball.z);
+    seb.setVelocity(game->ball.velocity_x,game->ball.velocity_y, game->ball.velocity_z );
+    
+    sim.getHitPosition(seb, rr1);
+    
+    double dist_k = sqrt((rules->BALL_RADIUS + rules->ROBOT_RADIUS) * (rules->BALL_RADIUS + rules->ROBOT_RADIUS) -
+                         (rules->BALL_RADIUS - rules->ROBOT_RADIUS) * (rules->BALL_RADIUS - rules->ROBOT_RADIUS));
+    
+    SimulationEntity seb1;
+    
+//    seb1.setPosition(-7.375980, 2.348520, 32.424049);
+//    seb1.setVelocity(4.932860, 7.880722, -11.297524);
+//
+    SimulationEntity rob1;
+    rob1.setPosition(0, 1, -40);
+    rob1.setVelocity(0,0,0);
+//
+//    cout << "Dist_K "<<dist_k<<endl;
+//    Vec3 ballVelNormilized = seb1.velocity.normalized();
+//    cout << "Ball velocity "<< ballVelNormilized.toString()<< endl;
+//
+//        cout << "Ball goes to my goal "<<endl;
+//        Vec3 myGoalDirection = rob1.position - seb1.position;
+//        cout << "My Goal direction "<< myGoalDirection.toString() << endl;
+//        myGoalDirection.normAndApply();
+//        cout << "My Goal direction normilized "<< myGoalDirection.toString() << endl;
+//        ballVelNormilized.setY(0);
+//        ballVelNormilized.addAndApply(myGoalDirection);
+//        ballVelNormilized.normAndApply();
+//        ballVelNormilized.mulAndApply(dist_k);
+//
+//
+//        Vec3 hitPosition = seb1.position + ballVelNormilized;
+//    cout<< " Hit position " << hitPosition.toString() << endl;
+    
+    
+    
+    
+  
+    
+    seb1.setPosition(0.01620852498155985,4.864489392903213,20.175974571589464);
+    seb1.setVelocity(-1.0939493720315447,3.4111720924895037,13.676188984925659);
+    Vec3 ballVelNormalized = seb1.velocity.normalized();
+    ballVelNormalized.setY(0);
+    
+    Vec3 ENEMY_GOAL_TARGET = Vec3(0, rules->arena.goal_height - rules->BALL_RADIUS, rules->arena.depth / 2.0 + rules->BALL_RADIUS * 2);
+    cout<<endl<< " ENEMY GOAL TARGET " << ENEMY_GOAL_TARGET.toString() <<endl;
+    
+    Vec3 goalDirection = ENEMY_GOAL_TARGET - seb1.position;
+    cout << "Goal direction "<<goalDirection.toString()<<endl;
+    //attack goal directly
+    goalDirection.setY(0);
+    
+    goalDirection.normAndApply();
+    
+    cout << "Goal direction norm  "<<goalDirection.toString()<<endl;
+    goalDirection.subAndApply(ballVelNormalized);
+    cout << "Goal direction - vel "<<goalDirection.toString()<<endl;
+    goalDirection.normAndApply();
+    cout << "Goal direction norm "<<goalDirection.toString()<<endl;
+    goalDirection.mulAndApply(2.9);
+    cout << "Goal direction multiplied "<<goalDirection.toString()<<endl;
+    
+    Vec3 hitPosition = seb1.position - goalDirection;
+    
+    cout << "Initial hit position "<<hitPosition.toString()<<endl;
+    if ( seb1.position.getY()<= rules->ROBOT_RADIUS*1.75 + rules->BALL_RADIUS){
+                    double radsum = rules->ROBOT_RADIUS + rules->BALL_RADIUS;
+                    double dY = seb1.position.getY() - rules->ROBOT_RADIUS;
+                    double XZ = sqrt( radsum * radsum - dY * dY );
+        //
+                    cout << "Position ' " << Vec3(seb1.position.getX() , 1, seb1.position.getZ() - XZ ).toString()<<endl;
+                }
+    else{
+        Vec3 nd = (seb1.position - rob1.position).normalized();
+        nd.mulAndApply(3);
+        Vec3 nnd = Vec3(nd.getX(), 0, nd.getY());
+        goalDirection.setY(0);
+        goalDirection.normAndApply();
+        goalDirection.mulAndApply(nnd.len());
+        goalDirection.addAndApply(Vec3(0, nd.getY(), 0));
+        hitPosition = seb1.position - goalDirection;
+        cout << "hit position' "<<hitPosition.toString()<<endl;
+    }
+    
+//    sim.checkAchievement(rr1, Vec3(9.212919, 1.261145, -39.912168),  46, route);
 /*
 
     cout << " start speed " << rules->ROBOT_MAX_JUMP_SPEED << endl;

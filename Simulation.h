@@ -115,6 +115,7 @@ private:
     
     Vec3 defaultGoalKeeperPosition;
     Vec3 ENEMY_GOAL_TARGET;
+    double dist_k;
     
 public:
     std::unique_ptr<SimulationEngine> engine;

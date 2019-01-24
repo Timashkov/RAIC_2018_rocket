@@ -71,6 +71,13 @@ public:
         double length = len();
         return Vec3(X / length, Y / length, Z / length);
     }
+    
+    inline void normAndApply() {
+        double length = len();
+        X /= length;
+        Y /= length;
+        Z /= length;
+    }
 
     friend Vec3 operator+(Vec3 lhs, const Vec3 &rhs) {
         lhs.setX(lhs.getX() + rhs.getX());
