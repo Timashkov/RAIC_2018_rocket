@@ -260,14 +260,25 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
 
     TreeNode *tn = baseNode.get();
     cout << "Check alternatives for node " << baseNode->state.current_tick << endl;
+    int skipForNowId = -1;
+    int freeGoing = 0;
+
+    bool isBallFlyInitially = tn->state.ball.position.getY() > rules.ROBOT_RADIUS*2 + rules.BALL_RADIUS;
+    Vec3 achievementFlyingBallPosition = Vec3::None;
+    int achievementFlyingBallTick = -1;
+
+
     while (tn->children.size() > 0) {
         route.clear();
         for (SimulationEntity &se: tn->state.robots) {
             if (!se.teammate)
                 continue;
+
+            if (se.position.getZ() > tn->state.ball.position.getZ() && se.id!= goalKeeperId){
+                skipForNowId = se.id;
+            }
             
-            if (se.touch &&
-                se.position.getZ() < tn->state.ball.position.getZ() &&
+            if (se.touch && se.id != skipForNowId &&
                 ((tn->state.ball.position.getZ() < 0 && se.id == goalKeeperId) ||
                  se.id != goalKeeperId)) {
         
@@ -291,8 +302,26 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                         cout << " For Attacker " << se.id << endl;
                         attackerId = se.id;
                         break;
+                    } else {
+                        if ( ball.position.getY()< rules.ROBOT_RADIUS*1.75 + rules.BALL_RADIUS){
+
+                            double XZ =sqrt((rules.ROBOT_RADIUS + rules.BALL_RADIUS)*(rules.ROBOT_RADIUS + rules.BALL_RADIUS)- (ball.position.getY()- rules.ROBOT_RADIUS)*(ball.position.getY()- rules.ROBOT_RADIUS));
+
+                            hitAchieved = checkAchievement(se, Vec3(ball.position.getX() , 1, ball.position.getZ()-XZ),
+                                                                                           tn->state.current_tick - current_tick, route);
+                            if (hitAchieved) {
+                                cout << " For Attacker ground " << se.id << endl;
+                                attackerId = se.id;
+                                break;
+                            }
+                        }
                     }
+
                 }
+            if ( tn->state.ball.position.getY() < rules.ROBOT_RADIUS*2 + rules.BALL_RADIUS && achievementFlyingBallTick){
+                achievementFlyingBallPosition = tn->state.ball.position;
+                achievementFlyingBallTick = tn->state.current_tick;
+            }
             if (!se.touch){
                 se.action.jump_speed = 0.0;
                 se.action.use_nitro = false;
@@ -303,7 +332,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                 se.action.target_velocity_y = se.velocity.getY();
                 se.action.target_velocity_z = se.velocity.getZ();
                 se.action_set = true;
-                
+                freeGoing++;
                 moveRobotAndAdjustNextNode(se, tn->children[0].get());
                 cout << endl;
             }
@@ -323,7 +352,8 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
             }
         }
     }
-
+    Vec3 lastKnownBallPosition = Vec3::None;
+    lastKnownBallPosition = tn->state.ball.position;
     tn = baseNode.get();
 
     cout << "ACTIONS " << tn->state.current_tick << endl;
@@ -334,6 +364,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         int i = 0;
         while (tn->children.size() > 0 && i < route.size()) {
             TreeNode *childNode = tn->children[0].get();
+            cout << "Action for tick " << tn->state.current_tick <<endl;
             for (SimulationEntity &robot: tn->state.robots) {
                 if (robot.id == attackerId) {
                     //COPY FROM ROUTE
@@ -343,6 +374,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     robot.velocity = route.at(i).velocity;
                     robot.action_set = true;
                     i++;
+                    cout << "Attacker id "<< robot.id << endl;
                     cout << "Robot action target velocity "<< robot.action.target_velocity_x << ";"
                     << robot.action.target_velocity_y << ";" << robot.action.target_velocity_z << endl;
                     cout << "Robot action target jumpspeed "<< robot.action.jump_speed << endl;
@@ -384,40 +416,42 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     if (del.len() > 1) {
                         del = del.normalized() * rules.ROBOT_MAX_GROUND_SPEED;
                     }
-                    cout << "Target velocity " << del.toString() << " len " << del.len() << endl;
+                    cout << "Target velocity " << del.toString() << endl;
                     robot.action.target_velocity_x = del.getX();
                     robot.action.target_velocity_y = del.getY();
                     robot.action.target_velocity_z = del.getZ();
                     robot.action_set = true;
-                    cout << endl;
                     moveRobotAndAdjustNextNode(robot, childNode);
                 }
             }
-            
+            cout<<endl;
             tn = childNode;
         }
         cout<< " ------- TICK COLLISION EXISTS END -------"<<endl;
         
     } else {
         cout << " +++++++++ FREE GOING +++++++++++"<<endl;
-        TreeNode *targetBallNode = tn;
+//        TreeNode *targetBallNode = tn;
+
         bool allTimeFly = true;
 
-        for (int j = 0; j < 15; j++) {
-            targetBallNode = targetBallNode->children[tn->children.size() - 1].get();
+        if (freeGoing == 0)
+            freeGoing = 20;
+
+        for (int j = 0; j < freeGoing; j++) {
+//            targetBallNode = targetBallNode->children[tn->children.size() - 1].get();
             if ( tn->state.ball.position.getY() <= rules.ROBOT_RADIUS * 2 + rules.BALL_RADIUS){
                 allTimeFly = false;
-                
             }
         }
-       
-        for (int i = 0; i < 15; i++) {
+        for (int i = 0; i < freeGoing; i++) {
             TreeNode *childNode = tn->children[tn->children.size() - 1].get();
+            cout << "Action for tick " << tn->state.current_tick <<endl;
             for (SimulationEntity &robot: tn->state.robots) {
                 Vec3 target = defaultGoalKeeperPosition; // FIND BALL x GOAL position
                 
                 if (robot.id == goalKeeperId) {
-                    
+                    cout << " Goal keeper id " << goalKeeperId <<endl;
                     if (tn->state.ball.velocity.getZ() < 0){
                         double k = tn->state.ball.velocity.getZ() / tn->state.ball.velocity.getX();
                         double b = tn->state.ball.position.getZ() - k * tn->state.ball.position.getX();
@@ -430,8 +464,10 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                         if (tn->state.ball.position.getZ() < robot.position.getZ() + rules.BALL_RADIUS ){
                             if (abs(target.getX() - robot.position.getX()) < radsum) {
                                 target = robot.position;
-                                if (abs(robot.position.getX()) < abs(targetBallNode->state.ball.position.getX()) + radsum) {
-                                    if (robot.position.getX() < targetBallNode->state.ball.position.getX())
+//                                if (abs(robot.position.getX()) < abs(targetBallNode->state.ball.position.getX()) + radsum) {
+//                                    if (robot.position.getX() < targetBallNode->state.ball.position.getX())
+                                if (abs(robot.position.getX()) < abs(lastKnownBallPosition.getX()) + radsum) {
+                                    if (robot.position.getX() < lastKnownBallPosition.getX())
                                         target.setX(target.getX() - radsum * 2);
                                     else
                                         target.setX(target.getX() + radsum * 2);
@@ -442,8 +478,9 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                         }
                     }
                 } else {
-
-                    target = targetBallNode->state.ball.position;
+                    cout << " Last known attacker id " << robot.id << endl;
+//                    target = targetBallNode->state.ball.position;
+                    target = lastKnownBallPosition;
                     cout << " TArgt ball node position "<< target.toString()<< endl;
                     cout<< " Robot current speed " << robot.velocity.toString() << endl;
                     cout << " ball current pos "<< tn->state.ball.position.toString() << endl;
@@ -459,8 +496,10 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                         if (tn->state.ball.position.getZ() < robot.position.getZ() + 1 || target.getZ() < robot.position.getZ() + 1){
                             if (abs(target.getX() - robot.position.getX()) < radsum) {
                                 target = robot.position;
-                                if (abs(robot.position.getX()) < abs(targetBallNode->state.ball.position.getX()) + radsum) {
-                                    if (robot.position.getX() < targetBallNode->state.ball.position.getX())
+//                                if (abs(robot.position.getX()) < abs(targetBallNode->state.ball.position.getX()) + radsum) {
+//                                    if (robot.position.getX() < targetBallNode->state.ball.position.getX())
+                                if (abs(robot.position.getX()) < abs(lastKnownBallPosition.getX()) + radsum) {
+                                    if (robot.position.getX() < lastKnownBallPosition.getX())
                                         target.setX(target.getX() - radsum * 2);
                                     else
                                         target.setX(target.getX() + radsum * 2);
@@ -489,6 +528,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                 moveRobotAndAdjustNextNode(robot, childNode);
             }
             tn = childNode;
+            cout<<endl;
         }
         cout<< " ------ FREEE GOING -----"<<endl;
     }
@@ -551,7 +591,8 @@ bool Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_a
     
     double attempts_t = ((double)max_attempts) / rules.TICKS_PER_SECOND;
     
-    double rightPartTime = ((initial_delta - rr1.velocity * (jp.fullTimeSec + attempts_t - delta_time)) / rules.ROBOT_ACCELERATION).len();
+    //TODO: review rightPart!
+    double rightPartTime = ((initial_delta - rr1.velocity * (jp.fullTimeSec + attempts_t + delta_time)) / rules.ROBOT_ACCELERATION).len();
     
     if (rightPartTime > attempts_t * ( jp.fullTimeSec + attempts_t / 2)){
         
@@ -717,6 +758,7 @@ Vec3 Simulation::getHitPosition(SimulationEntity ball, SimulationEntity robot) {
     cout << "Ball position "<< ball.position.toString()<< endl;
    
     
+
 //    if (ball.velocity.getZ() < 0 ){
 //        if ( ball.position.getY()> rules.ROBOT_RADIUS*1.75 + rules.BALL_RADIUS){
 //            double radsum = rules.ROBOT_RADIUS + rules.BALL_RADIUS;
@@ -746,7 +788,7 @@ Vec3 Simulation::getHitPosition(SimulationEntity ball, SimulationEntity robot) {
         return hitPosition;
     }
     
-    /** TODO: normalize vectors before angle compare **/
+    /** TODO: normalize vectors before angle compare + velocity check **/
     
     Vec3 goalDirection = ENEMY_GOAL_TARGET - ball.position;
 //    double lenBG2 = goalDirection.lenPowered2();
