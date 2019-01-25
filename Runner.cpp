@@ -195,27 +195,30 @@ void testRun1() {
     SimulationEntity rr1;
     rr1.setNormal(Vec3(0,1,0));
     rr1.touch = true;
-    rr1.setVelocity(Vec3(0,0,0));
-    rr1.setPosition(Vec3(9.147315, 1, -40));
+    rr1.setVelocity(Vec3(0,0,-10));
+    rr1.setPosition(Vec3(0, 1, 0));
+
+    sim.checkAchievement(rr1, Vec3(0, 1, -10),  25, route);
+
+
+//    SimulationEntity seb;
     
-    SimulationEntity seb;
+//    seb.setPosition(game->ball.x, game->ball.y, game->ball.z);
+//    seb.setVelocity(game->ball.velocity_x,game->ball.velocity_y, game->ball.velocity_z );
     
-    seb.setPosition(game->ball.x, game->ball.y, game->ball.z);
-    seb.setVelocity(game->ball.velocity_x,game->ball.velocity_y, game->ball.velocity_z );
+//    sim.getHitPosition(seb, rr1);
     
-    sim.getHitPosition(seb, rr1);
+//    double dist_k = sqrt((rules->BALL_RADIUS + rules->ROBOT_RADIUS) * (rules->BALL_RADIUS + rules->ROBOT_RADIUS) -
+//                         (rules->BALL_RADIUS - rules->ROBOT_RADIUS) * (rules->BALL_RADIUS - rules->ROBOT_RADIUS));
     
-    double dist_k = sqrt((rules->BALL_RADIUS + rules->ROBOT_RADIUS) * (rules->BALL_RADIUS + rules->ROBOT_RADIUS) -
-                         (rules->BALL_RADIUS - rules->ROBOT_RADIUS) * (rules->BALL_RADIUS - rules->ROBOT_RADIUS));
+//    SimulationEntity seb1;
     
-    SimulationEntity seb1;
-    
-//    seb1.setPosition(-7.375980, 2.348520, 32.424049);
-//    seb1.setVelocity(4.932860, 7.880722, -11.297524);
-//
-    SimulationEntity rob1;
-    rob1.setPosition(0, 1, -40);
-    rob1.setVelocity(0,0,0);
+////    seb1.setPosition(-7.375980, 2.348520, 32.424049);
+////    seb1.setVelocity(4.932860, 7.880722, -11.297524);
+////
+//    SimulationEntity rob1;
+//    rob1.setPosition(0, 1, -40);
+//    rob1.setVelocity(0,0,0);
 //
 //    cout << "Dist_K "<<dist_k<<endl;
 //    Vec3 ballVelNormilized = seb1.velocity.normalized();
@@ -240,52 +243,52 @@ void testRun1() {
     
   
     
-    seb1.setPosition(0.01620852498155985,4.864489392903213,20.175974571589464);
-    seb1.setVelocity(-1.0939493720315447,3.4111720924895037,13.676188984925659);
-    Vec3 ballVelNormalized = seb1.velocity.normalized();
-    ballVelNormalized.setY(0);
+//    seb1.setPosition(0.01620852498155985,4.864489392903213,20.175974571589464);
+//    seb1.setVelocity(-1.0939493720315447,3.4111720924895037,13.676188984925659);
+//    Vec3 ballVelNormalized = seb1.velocity.normalized();
+//    ballVelNormalized.setY(0);
     
-    Vec3 ENEMY_GOAL_TARGET = Vec3(0, rules->arena.goal_height - rules->BALL_RADIUS, rules->arena.depth / 2.0 + rules->BALL_RADIUS * 2);
-    cout<<endl<< " ENEMY GOAL TARGET " << ENEMY_GOAL_TARGET.toString() <<endl;
+//    Vec3 ENEMY_GOAL_TARGET = Vec3(0, rules->arena.goal_height - rules->BALL_RADIUS, rules->arena.depth / 2.0 + rules->BALL_RADIUS * 2);
+//    cout<<endl<< " ENEMY GOAL TARGET " << ENEMY_GOAL_TARGET.toString() <<endl;
     
-    Vec3 goalDirection = ENEMY_GOAL_TARGET - seb1.position;
-    cout << "Goal direction "<<goalDirection.toString()<<endl;
-    //attack goal directly
-    goalDirection.setY(0);
+//    Vec3 goalDirection = ENEMY_GOAL_TARGET - seb1.position;
+//    cout << "Goal direction "<<goalDirection.toString()<<endl;
+//    //attack goal directly
+//    goalDirection.setY(0);
     
-    goalDirection.normAndApply();
+//    goalDirection.normAndApply();
     
-    cout << "Goal direction norm  "<<goalDirection.toString()<<endl;
-    goalDirection.subAndApply(ballVelNormalized);
-    cout << "Goal direction - vel "<<goalDirection.toString()<<endl;
-    goalDirection.normAndApply();
-    cout << "Goal direction norm "<<goalDirection.toString()<<endl;
-    goalDirection.mulAndApply(2.9);
-    cout << "Goal direction multiplied "<<goalDirection.toString()<<endl;
+//    cout << "Goal direction norm  "<<goalDirection.toString()<<endl;
+//    goalDirection.subAndApply(ballVelNormalized);
+//    cout << "Goal direction - vel "<<goalDirection.toString()<<endl;
+//    goalDirection.normAndApply();
+//    cout << "Goal direction norm "<<goalDirection.toString()<<endl;
+//    goalDirection.mulAndApply(2.9);
+//    cout << "Goal direction multiplied "<<goalDirection.toString()<<endl;
     
-    Vec3 hitPosition = seb1.position - goalDirection;
+//    Vec3 hitPosition = seb1.position - goalDirection;
     
-    cout << "Initial hit position "<<hitPosition.toString()<<endl;
-    if ( seb1.position.getY()<= rules->ROBOT_RADIUS*1.75 + rules->BALL_RADIUS){
-                    double radsum = rules->ROBOT_RADIUS + rules->BALL_RADIUS;
-                    double dY = seb1.position.getY() - rules->ROBOT_RADIUS;
-                    double XZ = sqrt( radsum * radsum - dY * dY );
-        //
-                    cout << "Position ' " << Vec3(seb1.position.getX() , 1, seb1.position.getZ() - XZ ).toString()<<endl;
-                }
-    else{
-        Vec3 nd = (seb1.position - rob1.position).normalized();
-        nd.mulAndApply(3);
-        Vec3 nnd = Vec3(nd.getX(), 0, nd.getY());
-        goalDirection.setY(0);
-        goalDirection.normAndApply();
-        goalDirection.mulAndApply(nnd.len());
-        goalDirection.addAndApply(Vec3(0, nd.getY(), 0));
-        hitPosition = seb1.position - goalDirection;
-        cout << "hit position' "<<hitPosition.toString()<<endl;
-    }
+//    cout << "Initial hit position "<<hitPosition.toString()<<endl;
+//    if ( seb1.position.getY()<= rules->ROBOT_RADIUS*1.75 + rules->BALL_RADIUS){
+//                    double radsum = rules->ROBOT_RADIUS + rules->BALL_RADIUS;
+//                    double dY = seb1.position.getY() - rules->ROBOT_RADIUS;
+//                    double XZ = sqrt( radsum * radsum - dY * dY );
+//        //
+//                    cout << "Position ' " << Vec3(seb1.position.getX() , 1, seb1.position.getZ() - XZ ).toString()<<endl;
+//                }
+//    else{
+//        Vec3 nd = (seb1.position - rob1.position).normalized();
+//        nd.mulAndApply(3);
+//        Vec3 nnd = Vec3(nd.getX(), 0, nd.getY());
+//        goalDirection.setY(0);
+//        goalDirection.normAndApply();
+//        goalDirection.mulAndApply(nnd.len());
+//        goalDirection.addAndApply(Vec3(0, nd.getY(), 0));
+//        hitPosition = seb1.position - goalDirection;
+//        cout << "hit position' "<<hitPosition.toString()<<endl;
+//    }
     
-//    sim.checkAchievement(rr1, Vec3(9.212919, 1.261145, -39.912168),  46, route);
+
 /*
 
     cout << " start speed " << rules->ROBOT_MAX_JUMP_SPEED << endl;
@@ -364,15 +367,15 @@ text height 3.78333
 text height 3.79583
 text height 3.8*/
 int main(int argc, char *argv[]) {
-        if (argc == 4) {
-            Runner runner(argv[1], argv[2], argv[3]);
-            runner.run();
-        } else {
-            Runner runner("127.0.0.1", "31001", "0000000000000000");
-            runner.run();
-        }
+//        if (argc == 4) {
+//            Runner runner(argv[1], argv[2], argv[3]);
+//            runner.run();
+//        } else {
+//            Runner runner("127.0.0.1", "31001", "0000000000000000");
+//            runner.run();
+//        }
 
-//    testRun1();
+    testRun1();
     return 0;
 }
 

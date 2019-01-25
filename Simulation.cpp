@@ -562,8 +562,8 @@ bool Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_a
     }
     
     //TODO: find correct tv
-    Vec3 tv = initial_delta.normalized();
-    tv.mulAndApply(rules.ROBOT_MAX_GROUND_SPEED);
+//    Vec3 tv = initial_delta.normalized();
+//    tv.mulAndApply(rules.ROBOT_MAX_GROUND_SPEED);
     JumpParams jp = getJumpParams(bptarget, false || bptarget.getZ()< -rules.arena.depth / 4.0 || bptarget.getY() > rules.ROBOT_RADIUS*2);
     if (jp.jump_ticks == -1){
         jp = getJumpParams(bptarget, true);
