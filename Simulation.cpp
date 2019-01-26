@@ -10,6 +10,7 @@
 #include "Simulation.h"
 #include "utils.h"
 #include <memory>
+#include <map>
 
 const int DEPTH = 60;
 
@@ -280,12 +281,13 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         }
     }
 
-    double hits[] = {0,0,0,0,0,0};
-    vector<SimulationEntity> route[6];
+    map<int, double> hits;
+    
+    map<int, vector<SimulationEntity>> route;
 
     
     while (tn->children.size() > 0) {
-        cout << "While run "<< endl;
+        
         bool alreadyTiuchCheked = false;
         
         for (SimulationEntity &se: tn->state.robots) {
@@ -372,7 +374,6 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
             }
         }
         if (hitAchieved) {
-            cout<< "1"<<endl;
             double max = 0;
             for (int idd = 0; idd < 6; idd++){
                 if (max < hits[idd]){
@@ -380,12 +381,10 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     attackerId = idd;
                 }
             }
-            cout<< "attacker id " << attackerId <<endl;
             for (const SimulationEntity &se: baseNode->state.robots) {
                 if( se.id != attackerId && se.id >= 0)
                     route[se.id].clear();
             }
-            cout<< "2 "<<endl;
             break;
         }
 
@@ -412,6 +411,8 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
     if (hitAchieved) {
 //        cout<< " +++++++ TICK COLLISION EXISTS +++++++++"<<endl;
         int i = 0;
+        if (attackerId < 0 && attackerId > 5)
+            cout << "attacker id " << attackerId << endl;
         while (tn->children.size() > 0 && i < route[attackerId].size()) {
             TreeNode *childNode = tn->children[0].get();
 //            cout << "Action for tick " << tn->state.current_tick <<endl;
