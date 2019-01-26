@@ -20,6 +20,7 @@ const double EPS = 1e-5;
 using namespace std;
 
 bool isEqual(double a, double b);
+bool isEqualHard(double a, double b);
 
 class Vec3 {
 private:

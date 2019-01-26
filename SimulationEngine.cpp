@@ -39,6 +39,29 @@ bool SimulationEngine::collide_entities(SimulationEntity &a, SimulationEntity &b
     return false;
 }
 
+// Направление определено жестко, рандом только в скорости после удара
+bool SimulationEngine::collide_entities_with_max(SimulationEntity &a, SimulationEntity &b) {
+    Vec3 delta_position = b.position - a.position;
+    double distance = delta_position.len();
+    double penetration = a.radius + b.radius - distance;
+    if (penetration > 0.0) {
+        double k_a = (1.0 / a.mass) / ((1.0 / a.mass) + (1.0 / b.mass));
+        double k_b = (1.0 / b.mass) / ((1.0 / a.mass) + (1.0 / b.mass));
+        Vec3 normal = delta_position.normalized();
+        a.setPosition(a.position - (normal * penetration * k_a));
+        b.setPosition(b.position + (normal * penetration * k_b));
+        Vec3 velodelta = b.velocity - a.velocity;
+        double delta_velocity = dot(velodelta, normal) + b.radius_change_speed - a.radius_change_speed;
+        if (delta_velocity < 0.0) {
+            Vec3 impulse = normal * (1.0 + rules.MAX_HIT_E) * delta_velocity;
+            a.velocity.addAndApply(impulse * k_a);
+            b.velocity.subAndApply(impulse * k_b);
+        }
+        return true;
+    }
+    return false;
+}
+
 Vec3 SimulationEngine::collide_with_arena(SimulationEntity &e) {
 
     e.danToArena = dan_to_arena(e.position);

@@ -30,6 +30,8 @@ public:
     void move(SimulationEntity &e, double delta_time);
 
     bool collide_entities(SimulationEntity &a, SimulationEntity &b);
+    
+    bool collide_entities_with_max(SimulationEntity &a, SimulationEntity &b);
 
     Vec3 collide_with_arena(SimulationEntity &e);
 

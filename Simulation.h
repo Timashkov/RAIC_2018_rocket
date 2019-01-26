@@ -134,7 +134,7 @@ public:
     void
     init(const Game &g, const Rules &rul, const int &goal_keeper_id);
 
-    void tickForBall(shared_ptr<TreeNode> parent);
+    void tickForBall(shared_ptr<TreeNode> parent, bool& result);
 
     inline bool isInited() const { return inited; };
 
@@ -160,9 +160,9 @@ public:
 
     void checkAlternatives(shared_ptr<TreeNode> baseNode);
 
-    bool checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_attempts, vector<SimulationEntity>& route);
+    double checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_attempts, vector<SimulationEntity>& route);
     
-    bool checkAchievementWithStop(SimulationEntity rr1, Vec3 bptarget, int max_attempts, vector<SimulationEntity>& route);
+//    bool checkAchievementWithStop(SimulationEntity rr1, Vec3 bptarget, int max_attempts, vector<SimulationEntity>& route);
 
     Vec3 getHitPosition(SimulationEntity ball, SimulationEntity robot);
 

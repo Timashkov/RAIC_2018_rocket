@@ -49,3 +49,7 @@ double dot(Vec3 a, Vec3 b){
 bool isEqual(double a, double b){
     return abs(a-b) < PRECISION;
 }
+
+bool isEqualHard(double a, double b){
+    return abs(a-b) < 0.001;
+}

@@ -36,7 +36,7 @@ void Simulation::init(const Game &g, const Rules &rul, const int &goal_keeper_id
     ENEMY_GOAL_INACCESS_Z = rules.arena.depth / 2.0 - (rules.BALL_RADIUS * 2 + rules.arena.bottom_radius) ;
     ENEMY_GOAL_INACCESS_X = rules.arena.width / 2.0 - rules.arena.corner_radius;
     
-    ENEMY_GOAL_SHADOW_CORNER = ENEMY_GOAL_INACCESS_X + rules.arena.depth / 2.0 - rules.BALL_RADIUS;
+    ENEMY_GOAL_SHADOW_CORNER = ENEMY_GOAL_INACCESS_X + rules.arena.depth / 2.0;
     dist_k = sqrt((rules.BALL_RADIUS + rules.ROBOT_RADIUS) * (rules.BALL_RADIUS + rules.ROBOT_RADIUS) -
                          (rules.BALL_RADIUS - rules.ROBOT_RADIUS) * (rules.BALL_RADIUS - rules.ROBOT_RADIUS));
 }
@@ -92,7 +92,8 @@ void Simulation::setTick(const Game &g) {
                     //DEBUG comment on publish
                     if (se.teammate){
                         for (const Robot &r: g.robots ){
-                            if (r.id == se.id && (!isEqual(se.position.getX(),r.x) || !isEqual(se.position.getY(),r.y) || !isEqual(se.position.getZ(),r.z  ))){
+                            if (r.id == se.id && (!isEqualHard(se.position.getX(),r.x) || !isEqualHard(se.position.getY(),r.y) || !isEqualHard(se.position.getZ(),r.z ))){
+                                action_required = true;
 //                                cout << " ROBOT position WRONG!!! expect " << se.position.toString() <<  " REAL " << r.x <<":"<<r.y<<":"<<r.z <<endl;
                             }
                         }
@@ -107,7 +108,7 @@ void Simulation::setTick(const Game &g) {
             }
         }
 
-//        cout << "Simulation wrong: " << current_tick << endl;
+//        cout << "Start new simulation: " << current_tick << endl;
 
         attackerId = -1;
         baseNode->children.clear();
@@ -119,7 +120,8 @@ void Simulation::setTick(const Game &g) {
 
         setRobotsParameters(baseNode, g);
 //        cout << "Start sim" << endl;
-        tickForBall(baseNode);
+        bool res = false;
+        tickForBall(baseNode, res);
         checkAlternatives(baseNode);
 //        cout << "After check alternatives " << current_tick << baseNode->state.current_tick << endl;
     }
@@ -147,7 +149,7 @@ void Simulation::setRobotsParameters(const shared_ptr<TreeNode> &node, const Gam
     }
 }
 
-void Simulation::tickForBall(shared_ptr<TreeNode> parent) {
+void Simulation::tickForBall(shared_ptr<TreeNode> parent, bool& result) {
 
     State st = State(parent->state);
     st.current_tick++;
@@ -155,6 +157,7 @@ void Simulation::tickForBall(shared_ptr<TreeNode> parent) {
     if (st.current_tick > DEPTH + current_tick) {
 //        cout << "break sim :" << st.current_tick << "-" << current_tick << " st ball pos "
 //             << st.ball.position.toString() << endl;
+        result = false;
         return;
     }
 
@@ -163,6 +166,10 @@ void Simulation::tickForBall(shared_ptr<TreeNode> parent) {
 
     for (int i = 0; i < rules.MICROTICKS_PER_TICK; i++) {
         updateForBall(node, delta_time);
+        
+//        if (abs(node->state.ball.position.getZ()) > rules.arena.depth / 2 + rules.BALL_RADIUS)
+//            result = true;
+
     }
 
     processingNodes.push(node);
@@ -170,7 +177,7 @@ void Simulation::tickForBall(shared_ptr<TreeNode> parent) {
     if (!processingNodes.empty()) {
         shared_ptr<TreeNode> tn = processingNodes.front();
         processingNodes.pop();
-        tickForBall(tn);
+        tickForBall(tn, result);
     }
 }
 
@@ -193,7 +200,8 @@ void Simulation::truncTree(shared_ptr<TreeNode> tn) {
 void Simulation::simulateNextSteps(shared_ptr<TreeNode> base) {
 
     if (base->children.empty()) {
-        tickForBall(base);
+        bool res;
+        tickForBall(base, res);
         return;
     }
 
@@ -256,15 +264,12 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
  double radsum = rules.ROBOT_RADIUS  + rules.BALL_RADIUS;
     bool hitAchieved = false;
     
-    vector<SimulationEntity> route;
-
     TreeNode *tn = baseNode.get();
 //    cout << "Check alternatives for node " << baseNode->state.current_tick << endl;
     
     int skipForNowId = -1;
     int freeGoing = 0;
 
-    bool isBallFlyInitially = tn->state.ball.position.getY() > rules.ROBOT_RADIUS*2 + rules.BALL_RADIUS;
     Vec3 achievementFlyingBallPosition = Vec3::None;
     int achievementFlyingBallTick = -1;
     for (SimulationEntity &se: tn->state.robots) {
@@ -275,12 +280,17 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         }
     }
 
+    double hits[] = {0,0,0,0,0,0};
+    vector<SimulationEntity> route[6];
+
+    
     while (tn->children.size() > 0) {
-        route.clear();
+        cout << "While run "<< endl;
         bool alreadyTiuchCheked = false;
+        
         for (SimulationEntity &se: tn->state.robots) {
             
-            if (!se.teammate)
+            if (!se.teammate && se.id < 0)
                 continue;
 
             
@@ -288,6 +298,8 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                 ((tn->state.ball.position.getZ() < 0 && se.id == goalKeeperId) ||
                  se.id != goalKeeperId)) {
         
+                    route[se.id].clear();
+                    
                     Vec3 ballHitPosition = getHitPosition(tn->state.ball, se);
                     
 //                    cout << "Hit position " << ballHitPosition.toString() << " for tick " << tn->state.current_tick << endl;
@@ -300,25 +312,23 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     SimulationEntity ball = tn->state.ball;
   
                     
-                    hitAchieved = checkAchievement(se, ballHitPosition,
-                                                                tn->state.current_tick - current_tick, route);
-                    
-  
-                    if (hitAchieved) {
-//                        cout << " For Attacker " << se.id << endl;
-                        attackerId = se.id;
-                        break;
+                    hits[se.id] = checkAchievement(se, ballHitPosition,
+                                                                tn->state.current_tick - current_tick, route[se.id]);
+                        
+                    if (hits[se.id] != 0) {
+                        hitAchieved = true;
+                        continue;
                     } else {
-                        if ( ball.position.getY()< rules.ROBOT_RADIUS*1.75 + rules.BALL_RADIUS){
+                        if ( ball.position.getY() < rules.ROBOT_RADIUS * 1.75 + rules.BALL_RADIUS ){
 
-                            double XZ =sqrt((rules.ROBOT_RADIUS + rules.BALL_RADIUS)*(rules.ROBOT_RADIUS + rules.BALL_RADIUS)- (ball.position.getY()- rules.ROBOT_RADIUS)*(ball.position.getY()- rules.ROBOT_RADIUS));
+                            double XZ = sqrt((rules.ROBOT_RADIUS + rules.BALL_RADIUS) * (rules.ROBOT_RADIUS + rules.BALL_RADIUS)- (ball.position.getY()- rules.ROBOT_RADIUS) * (ball.position.getY()- rules.ROBOT_RADIUS));
 
-                            hitAchieved = checkAchievement(se, Vec3(ball.position.getX() , 1, ball.position.getZ()-XZ),
-                                                                                           tn->state.current_tick - current_tick, route);
-                            if (hitAchieved) {
-//                                cout << " For Attacker ground " << se.id << endl;
-                                attackerId = se.id;
-                                break;
+                            route[se.id].clear();
+                            hits[se.id] = checkAchievement(se, Vec3(ball.position.getX() , 1, ball.position.getZ()-XZ),
+                                                                                           tn->state.current_tick - current_tick, route[se.id]);
+                            if (hits[se.id] != 0){
+                                hitAchieved = true;
+                                continue;
                             }
                         }
                     }
@@ -359,10 +369,23 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                 se.action_set = true;
                 freeGoing++;
                 moveRobotAndAdjustNextNode(se, tn->children[0].get());
-//                cout << endl;
             }
         }
-        if (attackerId != -1) {
+        if (hitAchieved) {
+            cout<< "1"<<endl;
+            double max = 0;
+            for (int idd = 0; idd < 6; idd++){
+                if (max < hits[idd]){
+                    max = hits[idd];
+                    attackerId = idd;
+                }
+            }
+            cout<< "attacker id " << attackerId <<endl;
+            for (const SimulationEntity &se: baseNode->state.robots) {
+                if( se.id != attackerId && se.id >= 0)
+                    route[se.id].clear();
+            }
+            cout<< "2 "<<endl;
             break;
         }
 
@@ -382,10 +405,6 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         lastKnownBallPosition = tn->state.ball.position;
     }
     tn = baseNode.get();
-
-    
-        
-
     
 //    cout << "ACTIONS " << tn->state.current_tick << endl;
 //    cout << " tn->state.current_tick "<< tn->state.current_tick << endl;
@@ -393,16 +412,16 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
     if (hitAchieved) {
 //        cout<< " +++++++ TICK COLLISION EXISTS +++++++++"<<endl;
         int i = 0;
-        while (tn->children.size() > 0 && i < route.size()) {
+        while (tn->children.size() > 0 && i < route[attackerId].size()) {
             TreeNode *childNode = tn->children[0].get();
 //            cout << "Action for tick " << tn->state.current_tick <<endl;
             for (SimulationEntity &robot: tn->state.robots) {
                 if (robot.id == attackerId) {
                     //COPY FROM ROUTE
                     
-                    robot.action = route.at(i).action;
-                    robot.position = route.at(i).position;
-                    robot.velocity = route.at(i).velocity;
+                    robot.action = route[attackerId].at(i).action;
+                    robot.position = route[attackerId].at(i).position;
+                    robot.velocity = route[attackerId].at(i).velocity;
                     robot.action_set = true;
                     i++;
 //                    cout << "Attacker id "<< robot.id << endl;
@@ -462,8 +481,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         
     } else {
 //        cout << " +++++++++ FREE GOING +++++++++++"<<endl;
-//        TreeNode *targetBallNode = tn;
-
+        
         bool allTimeFly = true;
 
         if (freeGoing == 0)
@@ -472,13 +490,14 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
         
         TreeNode *tnn = baseNode.get();
         for (int j = 0; j < freeGoing; j++) {
-//            targetBallNode = targetBallNode->children[tn->children.size() - 1].get();
+
             if ( tnn->state.ball.position.getY() <= rules.ROBOT_RADIUS * 2 + rules.BALL_RADIUS){
                 allTimeFly = false;
             }
             if (lastKnownBallPosition == Vec3::None)
                 lastKnownBallPosition = tnn->state.ball.position;
-            tnn = tnn->children[tn->children.size() - 1].get();
+            if (tnn->children.size() >0 )
+                tnn = tnn->children[tn->children.size() - 1].get();
         }
         for (int i = 0; i < freeGoing; i++) {
             TreeNode *childNode = tn->children[tn->children.size() - 1].get();
@@ -515,7 +534,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     }
                 } else {
 //                    cout << " Last known attacker id " << robot.id << endl;
-//                    target = targetBallNode->state.ball.position;
+
                     if (lastKnownBallPosition == Vec3::None)
                         lastKnownBallPosition = tn->state.ball.position;
                     target = lastKnownBallPosition;
@@ -523,6 +542,10 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
 //                    cout<< " Robot current speed " << robot.velocity.toString() << endl;
 //                    cout << " ball current pos "<< tn->state.ball.position.toString() << endl;
                     target.setY(1.0);
+                    
+                    if (tn->state.ball.velocity.getZ() > 0){
+                        target.setZ(target.getZ()- rules.BALL_RADIUS*2);
+                    }
                     
 //                    cout << " Default--- Go 2 ball LAST ATTACKER " << target.toString() << " parentNode tick: "
 //                    << tn->state.current_tick << " robot id "<< robot.id
@@ -579,36 +602,25 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
 //    cout << "ACTIONS DONE on tick " << tn->state.current_tick << endl;
 }
 
-bool Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_attempts, vector<SimulationEntity>& route) {
+double Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_attempts, vector<SimulationEntity>& route) {
 //    cout << endl << endl;
-    
+//
 //    cout << "## Check achievement for robot on position "<< rr1.position.toString() << endl
 //    << "velocity " << rr1.velocity.toString() << endl
 //    << "and bp target "<< bptarget.toString() << endl;
 //    cout << "Available delta time " << max_attempts << endl;
-//
+    
     Vec3 bptarget_plain = Vec3(bptarget.getX(), 1, bptarget.getZ());
     
     Vec3 initial_delta = bptarget_plain - rr1.position;
     initial_delta.setY(0);
-//    double initial_delta_length = initial_delta.len();
-//    cout << "Initial delta length "<< initial_delta_length << endl;
-//    if (delta_time * rules.MICROTICKS_PER_TICK * rules.ROBOT_MAX_GROUND_SPEED * max_attempts < initial_delta_length) {
-//        cout << " ->Can not be achieved , initial len "<<initial_delta_length << endl;
-//        cout << " ->Available len "<<delta_time * rules.MICROTICKS_PER_TICK * rules.ROBOT_MAX_GROUND_SPEED * max_attempts<<endl;
-//        cout << " ##->Return FALSE ##"<<endl;
-//        return false;
-//    }
     
-    //TODO: find correct tv
-//    Vec3 tv = initial_delta.normalized();
-//    tv.mulAndApply(rules.ROBOT_MAX_GROUND_SPEED);
-    JumpParams jp = getJumpParams(bptarget, false || bptarget.getZ()< -rules.arena.depth / 4.0 || bptarget.getY() > rules.ROBOT_RADIUS*2);
+    JumpParams jp = getJumpParams(bptarget, bptarget.getZ()< -rules.arena.depth / 4.0 || bptarget.getY() > rules.ROBOT_RADIUS * 2 );
     if (jp.jump_ticks == -1){
         jp = getJumpParams(bptarget, true);
         if (jp.jump_ticks == -1){
 //            cout << "can not jump so high"<<endl;
-            return false;
+            return -1;
         }
     }
     
@@ -618,13 +630,13 @@ bool Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_a
             jp = getJumpParams(bptarget, true);
         if (max_attempts - jp.jump_ticks < 0){
 //            cout << "Not enough time for jump"<<endl;
-            return false;
+            return -1;
             
         }
     }
     
     max_attempts -= jp.jump_ticks;
-    
+//
 //    cout << "Jump ticks "<< jp.jump_ticks<<endl;
 //    cout << "Full jump time in sec "<< jp.fullTimeSec <<endl;
     
@@ -650,7 +662,7 @@ bool Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_a
         if (rightPartTime > attempts_t * ( jp.fullTimeSec + attempts_t / 2)){
         
 //            cout << "not enough time for velocity change"<<endl;
-            return false;
+            return -1;
             
         }
     }
@@ -681,10 +693,14 @@ bool Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_a
 //    cout << "Velocity final "<< Vfinal.toString()<< endl;
     if (Vfinal.len()> rules.ROBOT_MAX_GROUND_SPEED){
 //        cout << "Too big velocity "<<endl;
-        return false;
+        return -1;
     }
     
+    TreeNode *tn = baseNode.get();
+    SimulationEntity ball = tn->state.ball;
     for ( int i = 0; i < max_attempts ; i++){
+        
+        ball = tn->state.ball;
         
         if (jp.jump_ticks >0 && i == max_attempts -1)
             break;
@@ -703,6 +719,25 @@ bool Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_a
         
         for (int j = 0; j < rules.MICROTICKS_PER_TICK; j++) {
             engine->moveRobot(rr1, delta_time);
+            
+            engine->move(ball, delta_time);
+            if ( (ball.position - rr1.position).len() < rr1.radius * 2 + ball.radius * 2 ){
+                
+                double Z0 = ball.velocity.getZ();
+                
+                if (engine->collide_entities(rr1, ball)){
+                    double Z1 = ball.velocity.getZ();
+                    if ( Z1 < Z0)
+                        return -1;
+                    if (rr1.position.getZ()>= abs(GOAL_THRESHOLD) )
+                        route.back().action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED/2;
+                    else
+                        route.back().action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED;
+                    return Z1 - Z0;
+                }
+            }
+            engine->collide_with_arena(ball);
+            
             Vec3 collision_normal = engine->collide_with_arena(rr1);
             if (collision_normal == Vec3::None) {
                 rr1.touch = false;
@@ -711,10 +746,13 @@ bool Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_a
                 rr1.touch_normal = collision_normal;
             }
         }
+        if (tn->children.size() >0)
+            tn = tn->children[tn->children.size() - 1].get();
     }
     if (jp.jump_ticks > 0){
         Vec3 dp = Vfinal;
         if (max_attempts != 0){
+            ball = tn->state.ball;
             dp = bptarget - rr1.position;
             dp.setY(0);
             dp.mulAndApply(1/ (delta_time * rules.MICROTICKS_PER_TICK * (jp.jump_ticks + 1)));
@@ -729,18 +767,40 @@ bool Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_a
             rr1.action.use_nitro = false;
             route.push_back(rr1);
             
-                for (int j = 0; j < rules.MICROTICKS_PER_TICK; j++) {
-                    engine->moveRobot(rr1, delta_time);
-                    Vec3 collision_normal = engine->collide_with_arena(rr1);
-                    if (collision_normal == Vec3::None) {
-                        rr1.touch = false;
-                    } else {
-                        rr1.touch = true;
-                        rr1.touch_normal = collision_normal;
+            for (int j = 0; j < rules.MICROTICKS_PER_TICK; j++) {
+                engine->moveRobot(rr1, delta_time);
+                
+                engine->move(ball, delta_time);
+                if ( (ball.position - rr1.position).len() < rr1.radius * 2 + ball.radius * 2 ){
+                    
+                    double Z0 = ball.velocity.getZ();
+                    
+                    if (engine->collide_entities(rr1, ball)){
+                        double Z1 = ball.velocity.getZ();
+                        if ( Z1 < Z0)
+                            return -1;
+                        if (rr1.position.getZ()>= abs(GOAL_THRESHOLD) )
+                            route.back().action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED/2;
+                        else
+                            route.back().action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED;
+                        return Z1 - Z0;
                     }
                 }
+                engine->collide_with_arena(ball);
+                
+                Vec3 collision_normal = engine->collide_with_arena(rr1);
+                if (collision_normal == Vec3::None) {
+                    rr1.touch = false;
+                } else {
+                    rr1.touch = true;
+                    rr1.touch_normal = collision_normal;
+                }
+            }
+            if (tn->children.size() > 0)
+                tn = tn->children[tn->children.size() - 1].get();
         }
         
+        ball = tn->state.ball;
         dp = bptarget - rr1.position;
         dp.setY(0);
         dp.mulAndApply(1/ (delta_time * rules.MICROTICKS_PER_TICK * jp.jump_ticks));
@@ -759,16 +819,34 @@ bool Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_a
             if (i != 0){
                 rr1.action.jump_speed = 0;
             }
-//            if (i == jp.jump_ticks-1){
-                if (rr1.position.getZ()>= abs(GOAL_THRESHOLD) )
-                    rr1.action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED/2;
-                else
-                    rr1.action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED;
-//            }
+            if (rr1.position.getZ()>= abs(GOAL_THRESHOLD) )
+                rr1.action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED/2;
+            else
+                rr1.action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED;
+            
             route.push_back(rr1);
             
             for (int j = 0; j < rules.MICROTICKS_PER_TICK; j++) {
                 engine->moveRobot(rr1, delta_time);
+                
+                engine->move(ball, delta_time);
+                if ( (ball.position - rr1.position).len() < rr1.radius * 2 + ball.radius * 2 ){
+                    
+                    double Z0 = ball.velocity.getZ();
+                    
+                    if (engine->collide_entities(rr1, ball)){
+                        double Z1 = ball.velocity.getZ();
+                        if ( Z1 < Z0)
+                            return -1;
+                        if (rr1.position.getZ()>= abs(GOAL_THRESHOLD) )
+                            route.back().action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED/2;
+                        else
+                            route.back().action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED;
+                        return Z1 - Z0;
+                    }
+                }
+                engine->collide_with_arena(ball);
+                
                 Vec3 collision_normal = engine->collide_with_arena(rr1);
                 if (collision_normal == Vec3::None) {
                     rr1.touch = false;
@@ -777,178 +855,163 @@ bool Simulation::checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_a
                     rr1.touch_normal = collision_normal;
                 }
             }
+            if (tn->children.size() >0)
+                tn = tn->children[tn->children.size() - 1].get();
         }
-    }else {
+    } else {
         if (rr1.position.getZ()>= abs(GOAL_THRESHOLD) )
             route.back().action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED/2;
         else
             route.back().action.jump_speed = rules.ROBOT_MAX_JUMP_SPEED;
     }
-
-//    cout << " Final position " << rr1.position.toString() << endl;
-//    cout << " Final distance " << (bptarget - rr1.position).toString() << endl;
-     return true;
-
-}
-
-bool Simulation::checkAchievementWithStop(SimulationEntity rr1, Vec3 bptarget, int max_attempts, vector<SimulationEntity>& route) {
-    
-    
-//    cout << "## Check achievementWithStop for robot on position "<< rr1.position.toString() << endl
-//    << "velocity " << rr1.velocity.toString() << endl
-//    << "and bp target "<< bptarget.toString() << endl;
-//    cout << "Available delta time " << max_attempts << endl;
-//
-    
-    Vec3 bptarget_plain = Vec3(bptarget.getX(), 1, bptarget.getZ());
-    
-    Vec3 initial_delta = bptarget_plain - rr1.position;
-    double initial_delta_len = initial_delta.len();
-    initial_delta.setY(0);
-//    cout<< "##_>> INITIAL DELTA " << initial_delta.toString() << endl;
-    double attempts_t = ((double)max_attempts) / rules.TICKS_PER_SECOND;
-    
-    //TODO: review rightPart!
-    
-//    cout<< "##_>> INITIAL DELTA " << initial_delta.toString() << endl;
-//    cout << " attempts_t "<< attempts_t << " delta time " << delta_time <<endl;
-//
-    double Tbrake_0= rr1.velocity.len() / rules.ROBOT_ACCELERATION;
-    if (Tbrake_0 > attempts_t){
-//        cout << "Not enought time to stop " << Tbrake_0 << endl;
-        return false;
-    }
-    
-    double TbrakeTicks = (int)( Tbrake_0 / rules.TICKS_PER_SECOND) + 1;
-    double brakeDistance = rules.ROBOT_ACCELERATION * (TbrakeTicks * TbrakeTicks)/ (rules.TICKS_PER_SECOND * rules.TICKS_PER_SECOND*2);
-    
-    if (brakeDistance > initial_delta_len){
-//        cout << "Too big distance "<< brakeDistance << endl;
-        return false;
-    }
-    
-    double rest_dist = initial_delta_len - brakeDistance;
-    double restTicks = max_attempts - TbrakeTicks;
-    
-//    cout << " Rest distance " << rest_dist << " : rest ticks  " << restTicks <<endl;
-    if (restTicks < 0){
-//        cout << "Not enough time "<< restTicks << endl;
-        return false;
-    }
-    
-    
-    double deltaLen = rules.ROBOT_MAX_GROUND_SPEED -  rr1.velocity.len();
-    int timeAccel = 0;
-    double dist1 = 0;
-    for ( ; timeAccel < restTicks / 2 && deltaLen > rules.ROBOT_ACCELERATION * timeAccel / rules.TICKS_PER_SECOND; timeAccel++ ){
-        
-        dist1 = rules.ROBOT_ACCELERATION * timeAccel * timeAccel /(rules.TICKS_PER_SECOND * rules.TICKS_PER_SECOND);
-        if (dist1 > rest_dist)
-            break;
-    }
-    
-    if (dist1 < rest_dist && timeAccel == restTicks/2){
-//        cout << "required full ahead but not enogh time" << endl;
-        return false;
-    }
-    double fullaheadtime = 0;
-    if (dist1 < rest_dist){
-//        cout <<"required full ahead" << endl;
-        double fullaheaddist = dist1 - rest_dist;
-        fullaheadtime = fullaheaddist / (rules.ROBOT_MAX_GROUND_SPEED * rules.TICKS_PER_SECOND) ;
-    }
-    
-    if (fullaheadtime <= restTicks - timeAccel*2){
-//        cout << "Not enough time for full ahead "<< fullaheadtime << endl;
-        return false;
-    }
-    
-    for ( int i = 0; i < max_attempts && i < fullaheadtime + timeAccel*2 + TbrakeTicks ; i++){
-        if ( i < timeAccel + fullaheadtime){
-            Vec3 direction = (bptarget_plain - rr1.position).normalized();
-            Vec3 vel = direction * rules.ROBOT_MAX_GROUND_SPEED;
-            
-            rr1.action.target_velocity_x = vel.getX();
-            rr1.action.target_velocity_y = vel.getY();
-            rr1.action.target_velocity_z = vel.getZ();
-            rr1.action.jump_speed = 0;
-            rr1.action.use_nitro = false;
-//            cout << "++"<<endl<<" Velocity on acceleration going required " << vel.toString() << endl;
-//            cout << " Position on start acceleration moving " << rr1.position.toString() << endl;
-//            cout << " Velocity on start acceleration moving " << rr1.velocity.toString() << endl <<"--"<<endl;
-            route.push_back(rr1);
-            
-            for (int j = 0; j < rules.MICROTICKS_PER_TICK; j++) {
-                engine->moveRobot(rr1, delta_time);
-                Vec3 collision_normal = engine->collide_with_arena(rr1);
-                if (collision_normal == Vec3::None) {
-                    rr1.touch = false;
-                } else {
-                    rr1.touch = true;
-                    rr1.touch_normal = collision_normal;
-                }
-            }
-            continue;
-        }
-        
-        Vec3 vel = (bptarget_plain - rr1.position);
-        
-        rr1.action.target_velocity_x = vel.getX();
-        rr1.action.target_velocity_y = vel.getY();
-        rr1.action.target_velocity_z = vel.getZ();
-        rr1.action.jump_speed = 0;
-        rr1.action.use_nitro = false;
-//        cout << "++"<<endl<<" Velocity on acceleration going required " << vel.toString() << endl;
-//        cout << " Position on start acceleration moving " << rr1.position.toString() << endl;
-//        cout << " Velocity on start acceleration moving " << rr1.velocity.toString() << endl <<"--"<<endl;
-        route.push_back(rr1);
-        
-        for (int j = 0; j < rules.MICROTICKS_PER_TICK; j++) {
-            engine->moveRobot(rr1, delta_time);
-            Vec3 collision_normal = engine->collide_with_arena(rr1);
-            if (collision_normal == Vec3::None) {
-                rr1.touch = false;
-            } else {
-                rr1.touch = true;
-                rr1.touch_normal = collision_normal;
-            }
-        }
-    }
     
 //    cout << " Final position " << rr1.position.toString() << endl;
 //    cout << " Final distance " << (bptarget - rr1.position).toString() << endl;
-    return true;
+    return -1;
     
 }
+
+//bool Simulation::checkAchievementWithStop(SimulationEntity rr1, Vec3 bptarget, int max_attempts, vector<SimulationEntity>& route) {
+//    
+////    cout << "## Check achievementWithStop for robot on position "<< rr1.position.toString() << endl
+////    << "velocity " << rr1.velocity.toString() << endl
+////    << "and bp target "<< bptarget.toString() << endl;
+////    cout << "Available delta time " << max_attempts << endl;
+//    
+//    Vec3 bptarget_plain = Vec3(bptarget.getX(), 1, bptarget.getZ());
+//    
+//    Vec3 initial_delta = bptarget_plain - rr1.position;
+//    double initial_delta_len = initial_delta.len();
+//    initial_delta.setY(0);
+////    cout<< "##_>> INITIAL DELTA " << initial_delta.toString() << endl;
+//    double attempts_t = ((double)max_attempts) / rules.TICKS_PER_SECOND;
+//    
+//    //TODO: review rightPart!
+//    
+////    cout<< "##_>> INITIAL DELTA " << initial_delta.toString() << endl;
+////    cout << " attempts_t "<< attempts_t << " delta time " << delta_time <<endl;
+//
+//    double Tbrake_0= rr1.velocity.len() / rules.ROBOT_ACCELERATION;
+//    if (Tbrake_0 > attempts_t){
+////        cout << "Not enought time to stop " << Tbrake_0 << endl;
+//        return false;
+//    }
+//    
+//    double TbrakeTicks = (int)( Tbrake_0 / rules.TICKS_PER_SECOND) + 1;
+//    double brakeDistance = rules.ROBOT_ACCELERATION * (TbrakeTicks * TbrakeTicks)/ (rules.TICKS_PER_SECOND * rules.TICKS_PER_SECOND * 2);
+//    
+//    if (brakeDistance > initial_delta_len){
+////        cout << "Too big distance "<< brakeDistance << endl;
+//        return false;
+//    }
+//    
+//    double rest_dist = initial_delta_len - brakeDistance;
+//    double restTicks = max_attempts - TbrakeTicks;
+//    
+////    cout << " Rest distance " << rest_dist << " : rest ticks  " << restTicks <<endl;
+//    if (restTicks < 0){
+////       cout << "Not enough time "<< restTicks << endl;
+//        return false;
+//    }
+//    
+//    
+//    double deltaLen = rules.ROBOT_MAX_GROUND_SPEED -  rr1.velocity.len();
+//    int timeAccel = 0;
+//    double dist1 = 0;
+//    for ( ; timeAccel < restTicks / 2 && deltaLen > rules.ROBOT_ACCELERATION * timeAccel / rules.TICKS_PER_SECOND; timeAccel++ ){
+//        
+//        dist1 = rules.ROBOT_ACCELERATION * timeAccel * timeAccel /(rules.TICKS_PER_SECOND * rules.TICKS_PER_SECOND);
+//        if (dist1 > rest_dist)
+//            break;
+//    }
+//    
+//    if (dist1 < rest_dist && timeAccel == restTicks/2){
+////        cout << "required full ahead but not enogh time" << endl;
+//        return false;
+//    }
+//    double fullaheadtime = 0;
+//    if (dist1 < rest_dist){
+////       cout <<"required full ahead" << endl;
+//        double fullaheaddist = dist1 - rest_dist;
+//        fullaheadtime = fullaheaddist / (rules.ROBOT_MAX_GROUND_SPEED * rules.TICKS_PER_SECOND) ;
+//    }
+//    
+//    if (fullaheadtime <= restTicks - timeAccel * 2){
+////        cout << "Not enough time for full ahead "<< fullaheadtime << endl;
+//        return false;
+//    }
+//    
+//    for ( int i = 0; i < max_attempts && i < fullaheadtime + timeAccel*2 + TbrakeTicks ; i++){
+//        if ( i < timeAccel + fullaheadtime){
+//            Vec3 direction = (bptarget_plain - rr1.position).normalized();
+//            Vec3 vel = direction * rules.ROBOT_MAX_GROUND_SPEED;
+//            
+//            rr1.action.target_velocity_x = vel.getX();
+//            rr1.action.target_velocity_y = vel.getY();
+//            rr1.action.target_velocity_z = vel.getZ();
+//            rr1.action.jump_speed = 0;
+//            rr1.action.use_nitro = false;
+////            cout << "++"<<endl<<" Velocity on acceleration going required " << vel.toString() << endl;
+////            cout << " Position on start acceleration moving " << rr1.position.toString() << endl;
+////            cout << " Velocity on start acceleration moving " << rr1.velocity.toString() << endl <<"--"<<endl;
+//            route.push_back(rr1);
+//            
+//            for (int j = 0; j < rules.MICROTICKS_PER_TICK; j++) {
+//                engine->moveRobot(rr1, delta_time);
+//                Vec3 collision_normal = engine->collide_with_arena(rr1);
+//                if (collision_normal == Vec3::None) {
+//                    rr1.touch = false;
+//                } else {
+//                    rr1.touch = true;
+//                    rr1.touch_normal = collision_normal;
+//                }
+//            }
+//            continue;
+//        }
+//        
+//        Vec3 vel = (bptarget_plain - rr1.position);
+//        
+//        rr1.action.target_velocity_x = vel.getX();
+//        rr1.action.target_velocity_y = vel.getY();
+//        rr1.action.target_velocity_z = vel.getZ();
+//        rr1.action.jump_speed = 0;
+//        rr1.action.use_nitro = false;
+////        cout << "++"<<endl<<" Velocity on acceleration going required " << vel.toString() << endl;
+////        cout << " Position on start acceleration moving " << rr1.position.toString() << endl;
+////        cout << " Velocity on start acceleration moving " << rr1.velocity.toString() << endl <<"--"<<endl;
+//        route.push_back(rr1);
+//        
+//        for (int j = 0; j < rules.MICROTICKS_PER_TICK; j++) {
+//            engine->moveRobot(rr1, delta_time);
+//            Vec3 collision_normal = engine->collide_with_arena(rr1);
+//            if (collision_normal == Vec3::None) {
+//                rr1.touch = false;
+//            } else {
+//                rr1.touch = true;
+//                rr1.touch_normal = collision_normal;
+//            }
+//        }
+//    }
+//    
+////    cout << " Final position " << rr1.position.toString() << endl;
+////    cout << " Final distance " << (bptarget - rr1.position).toString() << endl;
+//    return true;
+//    
+//}
 
 Vec3 Simulation::getHitPosition(SimulationEntity ball, SimulationEntity robot) {
     //attacker goes to ball position
 
-//    if ( ball.position.getZ() + abs(ball.position.getX()) > ENEMY_GOAL_SHADOW_CORNER){
-//        //Enemy corner shadow zone
+    if ( ball.position.getZ() + abs(ball.position.getX()) > ENEMY_GOAL_SHADOW_CORNER){
+        //Enemy corner shadow zone
 //        cout << "Enemy corner shadow"<<endl;
-//        return Vec3::None;
-//    }
-//    
+        return Vec3::None;
+    }
     
 //    cout << "Dist_K "<<dist_k<<endl;
     Vec3 ballVelNormilized = ball.velocity * delta_time * 100;
 //    cout << "Ball velocity "<< ballVelNormilized.toString()<< endl;
 //    cout << "Ball position "<< ball.position.toString()<< endl;
-   
-    
-
-//    if (ball.velocity.getZ() < 0 ){
-//        if ( ball.position.getY()> rules.ROBOT_RADIUS*1.75 + rules.BALL_RADIUS){
-//            double radsum = rules.ROBOT_RADIUS + rules.BALL_RADIUS;
-//            double dY = ball.position.getY() - rules.ROBOT_RADIUS;
-//            double XZ = sqrt( radsum * radsum - dY * dY );
-//
-//            return Vec3(ball.position.getX() , 1, ball.position.getZ() - XZ );
-//        }
-//    }
-
-    
     
     if (ball.velocity.getZ() < 0 && abs(ball.position.getZ()) > abs(GOAL_THRESHOLD) && ball.position.getZ() <= 0){
 //        cout << "Ball goes to my goal "<<endl;
@@ -961,7 +1024,6 @@ Vec3 Simulation::getHitPosition(SimulationEntity ball, SimulationEntity robot) {
         ballVelNormilized.normAndApply();
         ballVelNormilized.mulAndApply(dist_k);
         
-
         Vec3 hitPosition = ball.position + ballVelNormilized;
         
         return hitPosition;
@@ -970,25 +1032,7 @@ Vec3 Simulation::getHitPosition(SimulationEntity ball, SimulationEntity robot) {
     /** TODO: normalize vectors before angle compare + velocity check **/
     
     Vec3 goalDirection = ENEMY_GOAL_TARGET - ball.position;
-//    double lenBG2 = goalDirection.lenPowered2();
-//    double lenRB2 = (ball.position - robot.position).lenPowered2();
-//    double lenRG2 = (ENEMY_GOAL_TARGET - robot.position).lenPowered2();
-//    double lenRBBG2 = (sqrt(lenRB2) + sqrt(lenBG2))*(sqrt(lenRB2) + sqrt(lenBG2));
-//
-//    if (abs(lenRG2 - (lenRB2 + lenBG2)) < abs(lenRG2 - lenRBBG2) && abs(goalDirection.getZ()) < ENEMY_GOAL_INACCESS_Z){
-//        // looks like angle too big
-//        // attack to mirrored position
-//        if (ball.position.getX() < robot.position.getX()){
-//
-//            ENEMY_GOAL_TARGET.setX(rules.arena.width);
-//            cout << "Update ENEMY_GOAL_TARGET 1 "<<ENEMY_GOAL_TARGET.toString()<<endl;
-//        } else {
-//            ENEMY_GOAL_TARGET.setX(-rules.arena.width);
-//            cout << "Update ENEMY_GOAL_TARGET 2 "<<ENEMY_GOAL_TARGET.toString()<<endl;
-//        }
-//        goalDirection = ENEMY_GOAL_TARGET - ball.position;
-//    }
-//    cout << "Goal direction "<<goalDirection.toString()<<endl;
+    
     //attack goal directly
     goalDirection.setY(0);
     
@@ -1004,24 +1048,24 @@ Vec3 Simulation::getHitPosition(SimulationEntity ball, SimulationEntity robot) {
     
     Vec3 hitPosition = ball.position - goalDirection;
     if (abs(hitPosition.getX()) > rules.arena.width/2 - rules.ROBOT_RADIUS){
-//        cout << "Too big X" << endl;
+        //        cout << "Too big X" << endl;
         return Vec3::None;
     }
     
-        Vec3 nd = (ball.position - robot.position).normalized();
-        nd.mulAndApply(3);
-        Vec3 nnd = Vec3(nd.getX(), 0, nd.getY());
-        goalDirection.setY(0);
-        goalDirection.normAndApply();
-        goalDirection.mulAndApply(nnd.len());
-        goalDirection.addAndApply(Vec3(0, nd.getY(), 0));
-        hitPosition = ball.position - goalDirection;
-//        cout << "hit position' "<<hitPosition.toString()<<endl;
+    Vec3 nd = (ball.position - robot.position).normalized();
+    nd.mulAndApply(3);
+    Vec3 nnd = Vec3(nd.getX(), 0, nd.getY());
+    goalDirection.setY(0);
+    goalDirection.normAndApply();
+    goalDirection.mulAndApply(nnd.len());
+    goalDirection.addAndApply(Vec3(0, nd.getY(), 0));
+    hitPosition = ball.position - goalDirection;
+    //        cout << "hit position' "<<hitPosition.toString()<<endl;
     
     
-//    cout << "Initial hit position "<<hitPosition.toString()<<endl;
-//    hitPosition.setY(ball.position.getY() - rules.ROBOT_RADIUS);
-//    cout << "Hit position updated "<<hitPosition.toString()<<endl;
+    //    cout << "Initial hit position "<<hitPosition.toString()<<endl;
+    hitPosition.setY(ball.position.getY() - rules.ROBOT_RADIUS);
+    //    cout << "Hit position updated "<<hitPosition.toString()<<endl;
     return hitPosition;
 }
 
