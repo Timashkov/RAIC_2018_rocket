@@ -315,7 +315,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                     hits[se.id] = checkAchievement(se, ballHitPosition,
                                                                 tn->state.current_tick - current_tick, route[se.id]);
                         
-                    if (hits[se.id] != 0) {
+                    if (hits[se.id] > -1) {
                         hitAchieved = true;
                         continue;
                     } else {
@@ -326,7 +326,7 @@ void Simulation::checkAlternatives(shared_ptr<TreeNode> baseNode) {
                             route[se.id].clear();
                             hits[se.id] = checkAchievement(se, Vec3(ball.position.getX() , 1, ball.position.getZ()-XZ),
                                                                                            tn->state.current_tick - current_tick, route[se.id]);
-                            if (hits[se.id] != 0){
+                            if (hits[se.id] > -1){
                                 hitAchieved = true;
                                 continue;
                             }
