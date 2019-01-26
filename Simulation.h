@@ -161,6 +161,8 @@ public:
     void checkAlternatives(shared_ptr<TreeNode> baseNode);
 
     bool checkAchievement(SimulationEntity rr1, Vec3 bptarget, int max_attempts, vector<SimulationEntity>& route);
+    
+    bool checkAchievementWithStop(SimulationEntity rr1, Vec3 bptarget, int max_attempts, vector<SimulationEntity>& route);
 
     Vec3 getHitPosition(SimulationEntity ball, SimulationEntity robot);
 

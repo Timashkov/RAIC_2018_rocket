@@ -201,140 +201,50 @@ void testRun1() {
     sim.checkAchievement(rr1, Vec3(0, 1, -10),  25, route);
 
 
-//    SimulationEntity seb;
-    
-//    seb.setPosition(game->ball.x, game->ball.y, game->ball.z);
-//    seb.setVelocity(game->ball.velocity_x,game->ball.velocity_y, game->ball.velocity_z );
-    
-//    sim.getHitPosition(seb, rr1);
-    
-//    double dist_k = sqrt((rules->BALL_RADIUS + rules->ROBOT_RADIUS) * (rules->BALL_RADIUS + rules->ROBOT_RADIUS) -
-//                         (rules->BALL_RADIUS - rules->ROBOT_RADIUS) * (rules->BALL_RADIUS - rules->ROBOT_RADIUS));
-    
-//    SimulationEntity seb1;
-    
-////    seb1.setPosition(-7.375980, 2.348520, 32.424049);
-////    seb1.setVelocity(4.932860, 7.880722, -11.297524);
-////
-//    SimulationEntity rob1;
-//    rob1.setPosition(0, 1, -40);
-//    rob1.setVelocity(0,0,0);
-//
-//    cout << "Dist_K "<<dist_k<<endl;
-//    Vec3 ballVelNormilized = seb1.velocity.normalized();
-//    cout << "Ball velocity "<< ballVelNormilized.toString()<< endl;
-//
-//        cout << "Ball goes to my goal "<<endl;
-//        Vec3 myGoalDirection = rob1.position - seb1.position;
-//        cout << "My Goal direction "<< myGoalDirection.toString() << endl;
-//        myGoalDirection.normAndApply();
-//        cout << "My Goal direction normilized "<< myGoalDirection.toString() << endl;
-//        ballVelNormilized.setY(0);
-//        ballVelNormilized.addAndApply(myGoalDirection);
-//        ballVelNormilized.normAndApply();
-//        ballVelNormilized.mulAndApply(dist_k);
-//
-//
-//        Vec3 hitPosition = seb1.position + ballVelNormilized;
-//    cout<< " Hit position " << hitPosition.toString() << endl;
-    
-    
-    
-    
-  
-    
-//    seb1.setPosition(0.01620852498155985,4.864489392903213,20.175974571589464);
-//    seb1.setVelocity(-1.0939493720315447,3.4111720924895037,13.676188984925659);
-//    Vec3 ballVelNormalized = seb1.velocity.normalized();
-//    ballVelNormalized.setY(0);
-    
-//    Vec3 ENEMY_GOAL_TARGET = Vec3(0, rules->arena.goal_height - rules->BALL_RADIUS, rules->arena.depth / 2.0 + rules->BALL_RADIUS * 2);
-//    cout<<endl<< " ENEMY GOAL TARGET " << ENEMY_GOAL_TARGET.toString() <<endl;
-    
-//    Vec3 goalDirection = ENEMY_GOAL_TARGET - seb1.position;
-//    cout << "Goal direction "<<goalDirection.toString()<<endl;
-//    //attack goal directly
-//    goalDirection.setY(0);
-    
-//    goalDirection.normAndApply();
-    
-//    cout << "Goal direction norm  "<<goalDirection.toString()<<endl;
-//    goalDirection.subAndApply(ballVelNormalized);
-//    cout << "Goal direction - vel "<<goalDirection.toString()<<endl;
-//    goalDirection.normAndApply();
-//    cout << "Goal direction norm "<<goalDirection.toString()<<endl;
-//    goalDirection.mulAndApply(2.9);
-//    cout << "Goal direction multiplied "<<goalDirection.toString()<<endl;
-    
-//    Vec3 hitPosition = seb1.position - goalDirection;
-    
-//    cout << "Initial hit position "<<hitPosition.toString()<<endl;
-//    if ( seb1.position.getY()<= rules->ROBOT_RADIUS*1.75 + rules->BALL_RADIUS){
-//                    double radsum = rules->ROBOT_RADIUS + rules->BALL_RADIUS;
-//                    double dY = seb1.position.getY() - rules->ROBOT_RADIUS;
-//                    double XZ = sqrt( radsum * radsum - dY * dY );
-//        //
-//                    cout << "Position ' " << Vec3(seb1.position.getX() , 1, seb1.position.getZ() - XZ ).toString()<<endl;
-//                }
-//    else{
-//        Vec3 nd = (seb1.position - rob1.position).normalized();
-//        nd.mulAndApply(3);
-//        Vec3 nnd = Vec3(nd.getX(), 0, nd.getY());
-//        goalDirection.setY(0);
-//        goalDirection.normAndApply();
-//        goalDirection.mulAndApply(nnd.len());
-//        goalDirection.addAndApply(Vec3(0, nd.getY(), 0));
-//        hitPosition = seb1.position - goalDirection;
-//        cout << "hit position' "<<hitPosition.toString()<<endl;
-//    }
-    
-
-/*
-
-    cout << " start speed " << rules->ROBOT_MAX_JUMP_SPEED << endl;
-    double time = rules->ROBOT_MAX_JUMP_SPEED / rules->GRAVITY;
-    cout << " fly time " << time << endl;
-    double ticks = time * rules->TICKS_PER_SECOND;
-    cout << "ticks count " << ticks << endl;
-    double height = rules->GRAVITY * time * time / 2.0;
-    cout << " height " << height << endl;
-
-
-
-//    e.position.setY(e.position.getY() - rules.GRAVITY * delta_time * delta_time / 2.0);
-//    e.velocity.setY(e.velocity.getY() - rules.GRAVITY * delta_time);
-
-
-    double dt = 1.0 / (rules->TICKS_PER_SECOND);// * rules->MICROTICKS_PER_TICK);
-    double testHeight = 0.05;
-    double vel = rules->ROBOT_MAX_JUMP_SPEED;
-    for (int j = 0; j < ticks; j++) {
-//        for (int i = 0; i < rules->MICROTICKS_PER_TICK; i++) {
-            testHeight += vel * dt - rules->GRAVITY * dt * dt / 2;
-            vel -= rules->GRAVITY * dt;
-//        }
-        cout << "text height " << testHeight << " on tick " << j<< endl;
-    }
-    
-    SimulationEntity se;
-    se.setPosition(Vec3(0.00, 1.00, -39.792046));
-    se.setVelocity(Vec3(0,0,0));
-    se.touch = true;
-//   sim.checkAchievement(se
-//                        , Vec3(-0.062784, 1.030923, -39.792046)
-//                        , Vec3(-0.062784, 2.030923, -39.792046)
-//                        , 12);
-
-    se.action.target_velocity_x = 10;
-    se.action.target_velocity_y = 10;
-    se.action.target_velocity_z = 10;
-    se.setNormal(r1.touch_normal_x, r1.touch_normal_y, r1.touch_normal_z);
-    for (int i = 0; i < 100; i++){
-        sim.engine->moveRobot(se, 1.0/6000.0);
-        sim.engine->collide_with_arena(se);
-    }
-    cout<< se.velocity.toString() << endl;*/
-    
+    /*## Check achievement for robot on position (-22.551581;1.000000;7.906551) size=23.918348
+     velocity (-15.998261;0.000000;-25.378251) size=30.000000
+     and bp target (-24.305205;1.000000;0.320872) size=24.327884
+     Available delta time 44
+     Jump ticks 0
+     Full jump time in sec 0
+     ##_>> INITIAL DELTA (-1.753624;0.000000;-7.585679) size=7.785738
+     rr1.velocity (-15.998261;0.000000;-25.378251) size=30.000000
+     Jp.fullTimeSpec 0 attempts_t 0.733333 delta time 0.000166667
+     Right part time 0.148751
+     New acceleration time 0
+     New acceleration time 0.183333
+     New acceleration time 0.366667
+     New acceleration time 0.275
+     New acceleration time 0.183333
+     New acceleration time 0.229167
+     New acceleration time 0.275
+     New acceleration time 0.252083
+     New acceleration time 0.229167
+     New acceleration time 0.240625
+     New acceleration time 0.252083
+     New acceleration time 0.246354
+     New acceleration time 0.240625
+     New acceleration time 0.24349
+     New acceleration time 0.242057
+     New acceleration time 0.242773
+     New acceleration time 0.24349
+     New acceleration time 0.243132
+     New acceleration time 0.243311
+     New acceleration time 0.243221
+     Velocity final (-21.476460;0.000000;-49.075383) size=53.568942
+     Too big velocity
+     Dist_K 2.82843
+     Ball velocity (0.117183;-0.407042;-0.386446) size=0.573373
+     Ball position (-24.188021;2.233307;2.448965) size=24.414043
+     Goal direction (24.188021;5.766693;41.551035) size=48.423173
+     Goal direction (0.503094;0.000000;0.864232) size=1.000000
+     Goal direction (0.385910;0.000000;1.250678) size=1.308863
+     Goal direction (0.294844;0.000000;0.955545) size=1.000000
+     Goal direction (0.855047;0.000000;2.771082) size=2.900000
+     hit position' (-24.498940;1.598629;1.441323) size=24.593314
+     Initial hit position (-24.498940;1.598629;1.441323) size=24.593314
+     Hit position (-24.498940;1.598629;1.441323) size=24.593314 for tick 3986
+*/
 }
 /*text height 0.295833
 text height 0.533333
@@ -367,15 +277,15 @@ text height 3.78333
 text height 3.79583
 text height 3.8*/
 int main(int argc, char *argv[]) {
-//        if (argc == 4) {
-//            Runner runner(argv[1], argv[2], argv[3]);
-//            runner.run();
-//        } else {
-//            Runner runner("127.0.0.1", "31001", "0000000000000000");
-//            runner.run();
-//        }
+        if (argc == 4) {
+            Runner runner(argv[1], argv[2], argv[3]);
+            runner.run();
+        } else {
+            Runner runner("127.0.0.1", "31001", "0000000000000000");
+            runner.run();
+        }
 
-    testRun1();
+//    testRun1();
     return 0;
 }
 
