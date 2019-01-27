@@ -1016,10 +1016,43 @@ Vec3 Simulation::getHitPosition(SimulationEntity ball, SimulationEntity robot) {
     
     if (ball.velocity.getZ() < 0 && abs(ball.position.getZ()) > abs(GOAL_THRESHOLD) && ball.position.getZ() <= 0){
 //        cout << "Ball goes to my goal "<<endl;
+       
+    
+        if (abs(ball.position.getZ()) >= abs(rules.arena.depth/2 - rules.BALL_RADIUS) && ball.position.getZ() < 0){
+            
+            double tan = abs(ball.velocity.getX()/ball.velocity.getZ());
+            
+            
+            //        cout << "Ball goes to my goal "<<endl;
+            
+            Vec3 delta = ball.position - robot.position;
+            delta.normAndApply();
+            delta.mulAndApply(rules.ROBOT_RADIUS + rules.BALL_RADIUS);
+            
+            
+            Vec3 hitPosition = ball.position;
+            if (tan > 0.5){
+                hitPosition.setX(ball.position.getX());
+            } else {
+                hitPosition.setX(ball.position.getX() + ((ball.velocity.getX()>0?-1:1)*(rules.BALL_RADIUS/2)));
+            }
+            hitPosition.setZ(ball.position.getZ()-rules.BALL_RADIUS-rules.ROBOT_RADIUS);
+            hitPosition.setY(hitPosition.getY() - delta.getY());
+            //        cout << "My Goal direction "<< myGoalDirection.toString() << endl;
+            hitPosition.normAndApply();
+            hitPosition.mulAndApply(dist_k);
+            //        cout << "My Goal direction normilized "<< myGoalDirection.toString() << endl;
+            //        ballVelNormilized.setY(0);
+            //        ballVelNormilized.addAndApply(myGoalDirection);
+            //        ballVelNormilized.normAndApply();
+            //        ballVelNormilized.mulAndApply(dist_k);
+            
+            return hitPosition;
+        }
         Vec3 myGoalDirection = robot.position - ball.position;
-//        cout << "My Goal direction "<< myGoalDirection.toString() << endl;
+        //        cout << "My Goal direction "<< myGoalDirection.toString() << endl;
         myGoalDirection.normAndApply();
-//        cout << "My Goal direction normilized "<< myGoalDirection.toString() << endl;
+        //        cout << "My Goal direction normilized "<< myGoalDirection.toString() << endl;
         ballVelNormilized.setY(0);
         ballVelNormilized.addAndApply(myGoalDirection);
         ballVelNormilized.normAndApply();
@@ -1039,13 +1072,12 @@ Vec3 Simulation::getHitPosition(SimulationEntity ball, SimulationEntity robot) {
     
     goalDirection.normAndApply();
     ballVelNormilized.setY(0);
-//    cout << "Goal direction "<<goalDirection.toString()<<endl;
     goalDirection.subAndApply(ballVelNormilized);
-//    cout << "Goal direction "<<goalDirection.toString()<<endl;
+
     goalDirection.normAndApply();
-//    cout << "Goal direction "<<goalDirection.toString()<<endl;
+
     goalDirection.mulAndApply(2.9);
-//    cout << "Goal direction "<<goalDirection.toString()<<endl;
+
     
     Vec3 hitPosition = ball.position - goalDirection;
     if (abs(hitPosition.getX()) > rules.arena.width/2 - rules.ROBOT_RADIUS){
